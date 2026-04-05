@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投資組合價值走勢</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 20px; }
+  .container { max-width: 980px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .title { font-size: 17px; font-weight: 500; }
+  .subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+  .ccy-group { display: flex; gap: 6px; }
+  .ccy-btn { padding: 6px 16px; font-size: 13px; border-radius: 8px; border: 1.5px solid #ccc; background: transparent; color: #333; cursor: pointer; }
+  .ccy-btn.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+  .filter-bar { background: #f9f9f9; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .date-bar { background: #f0f4fa; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .filter-group label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+  select { font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #333; min-width: 130px; cursor: pointer; }
+  input[type="date"] { font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #333; cursor: pointer; }
+  .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .qbtn { padding: 5px 10px; font-size: 12px; border-radius: 6px; border: 1px solid #ddd; background: #fff; color: #555; cursor: pointer; }
+  .qbtn:hover { background: #e8eef7; border-color: #185FA5; color: #185FA5; }
+  .reload-btn { padding: 6px 14px; font-size: 13px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #555; cursor: pointer; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .card { background: #f5f8fc; border-radius: 8px; padding: 12px 14px; }
+  .card-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .card-value { font-size: 18px; font-weight: 500; }
+  .chart-wrap { position: relative; width: 100%; height: 360px; }
+  #tip {
+    display: none; position: absolute;
+    background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 12px; pointer-events: none;
+    z-index: 20; min-width: 240px; max-width: 300px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  #status { font-size: 13px; color: #888; text-align: center; padding: 8px 0; min-height: 24px; }
+  #status.error { color: #c0392b; }
+  @media (max-width: 600px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div>
+      <div class="title">投資組合價值走勢</div>
+      <div class="subtitle" id="lbl">正在載入...</div>
+    </div>
+    <div class="ccy-group">
+      <button class="ccy-btn active" id="bntd" onclick="setCcy('NTD')">新台幣</button>
+      <button class="ccy-btn" id="busd" onclick="setCcy('USD')">美元</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>客戶</label>
+      <select id="sc" onchange="onFilterChange()"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group">
+      <label>投資組合</label>
+      <select id="sp" onchange="onFilterChange()"><option value="">全部</option></select>
+    </div>
+    <div class="filter-group">
+      <label>標的代碼</label>
+      <select id="sf" onchange="onFilterChange()"><option value="">全部</option></select>
+    </div>
+    <button class="reload-btn" onclick="loadAll()">重新載入</button>
+  </div>
+
+  <div class="date-bar">
+    <div class="filter-group">
+      <label>開始日期</label>
+      <input type="date" id="date-start" onchange="redraw()">
+    </div>
+    <div class="filter-group">
+      <label>結束日期</label>
+      <input type="date" id="date-end" onchange="redraw()">
+    </div>
+    <div class="filter-group" style="align-self:flex-end;">
+      <button id="lock-btn" onclick="toggleLock()"
+        style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid #ccc;background:transparent;color:#555;cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <span id="lock-icon">🔓</span><span id="lock-label">鎖定區間</span>
+      </button>
+    </div>
+    <div class="filter-group">
+      <label>快速選擇</label>
+      <div class="quick-btns">
+        <button class="qbtn" onclick="setQuick(30)">近30天</button>
+        <button class="qbtn" onclick="setQuick(90)">近90天</button>
+        <button class="qbtn" onclick="setQuick(180)">近180天</button>
+        <button class="qbtn" onclick="setQuick(365)">近1年</button>
+        <button class="qbtn" onclick="setQuickFull()">全部</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="chart-wrap">
+    <canvas id="mc"></canvas>
+    <div id="tip"></div>
+  </div>
+
+  <div class="legend" id="lgd"></div>
+  <div id="status"></div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
+const COLORS = ['#185FA5','#1D9E75','#D85A30','#9B59B6','#BA7517','#993556','#0F6E56','#E24B4A','#3B6D11','#888780'];
+let pRows=[], txRows=[], fxMap={}, ccy='NTD', myChart=null;
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+async function fetchSheet(type) {
+  const r = await fetch(`${API}?type=${type}`, { redirect: 'follow' });
+  const text = await r.text();
+  let json;
+  try { json = JSON.parse(text); } catch(e) { throw new Error('回傳格式錯誤：' + text.slice(0,120)); }
+  if (!json.success) throw new Error(json.error || '讀取失敗');
+  return json.data;
+}
+
+function normDate(s) {
+  if (!s) return '';
+  s = String(s).trim();
+  const m = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return s;
+}
+
+function parsePriceData(rows) {
+  pRows = []; fxMap = {};
+  const hdr = rows[2];
+  if (!hdr) return;
+  const hdrs = hdr.slice(1).map(h => String(h||'').trim());
+
+  const fxCol = hdrs.findIndex(h => h === '美元兌新台幣匯率');
+
+  for (let i = 3; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[1] || !String(row[1]).trim()) continue;
+    const date = normDate(row[1]);
+    if (!date) continue;
+    const obj = { date };
+
+    for (let c = 1; c < hdrs.length; c++) {
+      const key = hdrs[c];
+      if (!key) continue;
+      const v = parseFloat(String(row[c+1]||'').replace(/,/g,''));
+      if (!isNaN(v) && v > 0) obj[key] = v;
+    }
+
+    if (fxCol >= 0) {
+      const fxv = parseFloat(String(row[fxCol+1]||'').replace(/,/g,''));
+      if (!isNaN(fxv) && fxv > 1) fxMap[date] = fxv;
+    }
+    pRows.push(obj);
+  }
+  pRows.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function parseTxData(rows) {
+  txRows = [];
+  for (let i = 3; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[1] || !String(row[1]).trim()) continue;
+    const date = normDate(row[1]);
+    if (!date) continue;
+    const units = parseFloat(String(row[5]||'').replace(/,/g,''));
+    if (isNaN(units) || units === 0) continue;
+    txRows.push({
+      date,
+      client:    String(row[2]||'').trim(),
+      portfolio: String(row[3]||'').trim(),
+      fund:      String(row[4]||'').trim(),
+      units,
+      note:      String(row[6]||'').trim()
+    });
+  }
+  txRows.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function fillSelects() {
+  const clients    = [...new Set(txRows.map(t=>t.client).filter(Boolean))].sort();
+  const portfolios = [...new Set(txRows.map(t=>t.portfolio).filter(Boolean))].sort();
+  const funds      = [...new Set(txRows.map(t=>t.fund).filter(Boolean))].sort();
+  fill('sc', clients); fill('sp', portfolios); fill('sf', funds);
+}
+
+function fill(id, opts) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  opts.forEach(o => sel.add(new Option(o, o)));
+  if (opts.includes(cur)) sel.value = cur;
+}
+
+async function loadAll() {
+  setStatus('正在從 Google Sheets 載入資料...');
+  document.getElementById('lbl').textContent = '正在載入...';
+  try {
+    const [pRaw, txRaw] = await Promise.all([fetchSheet('price'), fetchSheet('tx')]);
+    parsePriceData(pRaw);
+    parseTxData(txRaw);
+    fillSelects();
+    setStatus('');
+    document.getElementById('lbl').textContent = `已載入 ${pRows.length} 筆淨值、${txRows.length} 筆交易`;
+    resetDateRange();
+    redraw();
+  } catch(e) {
+    setStatus('載入失敗：' + e.message, true);
+    document.getElementById('lbl').textContent = '載入失敗';
+    console.error(e);
+  }
+}
+
+function filteredTx() {
+  const c = document.getElementById('sc').value;
+  const p = document.getElementById('sp').value;
+  const f = document.getElementById('sf').value;
+  return txRows.filter(t => (!c||t.client===c) && (!p||t.portfolio===p) && (!f||t.fund===f));
+}
+
+function onFilterChange() {
+  if (!dateLocked) resetDateRange();
+  redraw();
+}
+
+let dateLocked = false;
+
+function toggleLock() {
+  dateLocked = !dateLocked;
+  const btn   = document.getElementById('lock-btn');
+  const icon  = document.getElementById('lock-icon');
+  const label = document.getElementById('lock-label');
+  const startEl = document.getElementById('date-start');
+  const endEl   = document.getElementById('date-end');
+  if (dateLocked) {
+    btn.style.borderColor = '#185FA5';
+    btn.style.color       = '#185FA5';
+    btn.style.background  = '#e8eef7';
+    icon.textContent  = '🔒';
+    label.textContent = '已鎖定';
+    startEl.disabled = true;
+    endEl.disabled   = true;
+    startEl.style.opacity = '0.5';
+    endEl.style.opacity   = '0.5';
+  } else {
+    btn.style.borderColor = '#ccc';
+    btn.style.color       = '#555';
+    btn.style.background  = 'transparent';
+    icon.textContent  = '🔓';
+    label.textContent = '鎖定區間';
+    startEl.disabled = false;
+    endEl.disabled   = false;
+    startEl.style.opacity = '1';
+    endEl.style.opacity   = '1';
+  }
+}
+
+function resetDateRange() {
+  const tx = filteredTx();
+  const earliest = tx.length ? tx[0].date : getTodayStr();
+  document.getElementById('date-start').value = earliest;
+  document.getElementById('date-end').value = getTodayStr();
+}
+
+function setQuick(days) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - days);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('date-start').value = fmt(start);
+  document.getElementById('date-end').value = fmt(end);
+  redraw();
+}
+
+function setQuickFull() { if (!dateLocked) resetDateRange(); redraw(); }
+
+function isUSD(fund) { return fund && fund.toUpperCase().startsWith('USD'); }
+
+function getFX(date) {
+  if (fxMap[date]) return fxMap[date];
+  const keys = Object.keys(fxMap).sort();
+  let best = null;
+  for (const k of keys) { if (k <= date) best = k; else break; }
+  return best ? fxMap[best] : 31.5;
+}
+
+function getPrice(date, fund) {
+  let best = undefined;
+  for (const row of pRows) {
+    if (row.date <= date && row[fund] !== undefined) best = row[fund];
+    else if (row.date > date) break;
+  }
+  return best;
+}
+
+function calcVal(date, holdings) {
+  let totNTD = 0;
+  const fx = getFX(date);
+  for (const [f, u] of Object.entries(holdings)) {
+    if (!u) continue;
+    const p = getPrice(date, f);
+    if (p === undefined || p === null) continue;
+    totNTD += isUSD(f) ? u * p * fx : u * p;
+  }
+  return ccy === 'NTD' ? totNTD : totNTD / getFX(date);
+}
+
+function redraw() {
+  const tx = filteredTx();
+  if (!tx.length) {
+    setStatus('沒有符合條件的交易記錄');
+    if (myChart) { myChart.destroy(); myChart = null; }
+    document.getElementById('cards').innerHTML = '';
+    return;
+  }
+  setStatus('');
+
+  const dateStart  = document.getElementById('date-start').value;
+  const dateEnd    = document.getElementById('date-end').value;
+  const firstTxDate = tx[0].date;
+
+  const dates = pRows.map(r => r.date).filter(d =>
+    d >= firstTxDate &&
+    (!dateStart || d >= dateStart) &&
+    (!dateEnd   || d <= dateEnd)
+  );
+
+  if (!dates.length) { setStatus('所選時間範圍內無淨值資料', true); return; }
+
+  const funds = [...new Set(tx.map(t => t.fund))];
+  const txSorted = [...tx].sort((a,b) => a.date.localeCompare(b.date));
+  const txByDate = {};
+  txSorted.forEach(t => { if (!txByDate[t.date]) txByDate[t.date] = []; txByDate[t.date].push(t); });
+
+  const runH = {};
+  funds.forEach(f => runH[f] = 0);
+  txSorted.filter(t => t.date < dates[0]).forEach(t => { runH[t.fund] = (runH[t.fund]||0) + t.units; });
+
+  const snapshots = {};
+  const totalVals = dates.map(date => {
+    if (txByDate[date]) txByDate[date].forEach(t => { runH[t.fund] = (runH[t.fund]||0) + t.units; });
+    snapshots[date] = JSON.parse(JSON.stringify(runH));
+    return calcVal(date, runH);
+  });
+
+  renderCards(totalVals, dates);
+  renderLegend(funds);
+
+  if (myChart) myChart.destroy();
+  myChart = new Chart(document.getElementById('mc'), {
+    type: 'line',
+    data: {
+      labels: dates.map(d => d.slice(5)),
+      datasets: [{
+        label: '總值', data: totalVals,
+        borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.07)',
+        borderWidth: 2, pointRadius: 2, pointHoverRadius: 6, fill: true, tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false, external: ctx => showTip(ctx, dates, snapshots) }
+
+      },
+      scales: {
+        x: { ticks: { autoSkip: true, maxTicksLimit: 14, font:{size:11}, color:'#888' }, grid:{ color:'rgba(0,0,0,0.05)' } },
+        y: { ticks: { font:{size:11}, color:'#888', callback: v => fmtAxis(v) }, grid:{ color:'rgba(0,0,0,0.05)' } }
+      }
+    }
+  });
+}
+
+function showTip(ctx, dates, snapshots) {
+  const box = document.getElementById('tip');
+  if (ctx.tooltip.opacity === 0) { box.style.display = 'none'; return; }
+  const idx     = ctx.tooltip.dataPoints[0].dataIndex;
+  const date    = dates[idx];
+  const prevDate = idx > 0 ? dates[idx - 1] : null;
+  const h       = snapshots[date] || {};
+  const hPrev   = prevDate ? (snapshots[prevDate] || {}) : {};
+  const fx      = getFX(date);
+  const sym     = ccy === 'NTD' ? 'NT$' : 'US$';
+  const clients = [...new Set(filteredTx().map(t => t.client))].join(', ');
+
+  let textLines = [];
+  textLines.push(`日期：${date}`);
+  textLines.push(`客戶：${clients}`);
+  textLines.push(`美元兌新台幣匯率：${fx.toFixed(4)}`);
+  textLines.push('────────────────────');
+
+  let html = `<div style="font-weight:500;font-size:13px;color:#1a1a1a;margin-bottom:7px;border-bottom:1px solid #eee;padding-bottom:5px;">${date}</div>`;
+  html += `<div style="font-size:11px;color:#888;margin-bottom:2px;">客戶：${clients}</div>`;
+  html += `<div style="font-size:11px;color:#888;margin-bottom:8px;">美元兌新台幣匯率：${fx.toFixed(4)}</div>`;
+
+  let totNTD = 0, ri = 0;
+  for (const [f, u] of Object.entries(h)) {
+    if (!u) continue;
+    const p = getPrice(date, f);
+    if (p === undefined || p === null) continue;
+    const fundIsUSD = isUSD(f);
+    const valNTD  = fundIsUSD ? u * p * fx : u * p;
+    const dispVal = ccy === 'NTD' ? valNTD : valNTD / fx;
+    totNTD += valNTD;
+    const col  = COLORS[ri % COLORS.length];
+    const pSym = fundIsUSD ? 'US$' : 'NT$';
+
+    const uPrev = hPrev[f] !== undefined ? hPrev[f] : u;
+    const diff  = u - uPrev;
+    let uColor = '#888';
+    let uArrow = '';
+    if (diff > 0.0001)       { uColor = '#5b9bd5'; uArrow = ' ▲'; }
+    else if (diff < -0.0001) { uColor = '#e07070'; uArrow = ' ▼'; }
+
+    html += `
+      <div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:5px;margin-bottom:2px;">
+        <span style="width:8px;height:8px;border-radius:2px;background:${col};display:inline-block;"></span>
+        <span style="font-size:11px;color:#555;">${f} <span style="font-size:10px;color:#bbb;">(${fundIsUSD?'USD':'NTD'})</span></span>
+        <span style="font-size:11px;color:#1a1a1a;font-weight:500;">${sym}${fmtN(dispVal)}</span>
+      </div>
+      <div style="font-size:10px;margin-bottom:5px;padding-left:13px;">
+        <span style="color:${uColor};font-weight:500;">${fmtU(u)} 單位${uArrow}</span>
+        <span style="color:#bbb;"> × ${pSym}${p.toFixed(4)}</span>
+      </div>`;
+
+    textLines.push(`${f} (${fundIsUSD?'USD':'NTD'})`);
+    textLines.push(`  ${fmtU(u)} 單位${uArrow}  × ${pSym}${p.toFixed(4)}  = ${sym}${fmtN(dispVal)}`);
+    ri++;
+  }
+
+  const totDisp = ccy === 'NTD' ? totNTD : totNTD / fx;
+  textLines.push('────────────────────');
+  textLines.push(`合計：${sym}${fmtN(totDisp)}`);
+
+  html += `
+    <div style="border-top:1px solid #eee;padding-top:5px;margin-top:2px;display:flex;justify-content:space-between;font-size:13px;font-weight:500;color:#1a1a1a;">
+      <span>合計</span><span>${sym}${fmtN(totDisp)}</span>
+    </div>
+    <div style="margin-top:8px;text-align:right;">
+      <button id="copy-btn"
+        onclick="copyTip()"
+        style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #ddd;background:#f5f5f5;color:#555;cursor:pointer;">
+        複製
+      </button>
+      <span id="copy-ok" style="font-size:11px;color:#1D9E75;margin-left:6px;display:none;">已複製！</span>
+    </div>`;
+
+  box._copyText = textLines.join('\n');
+  box.innerHTML = html;
+  box.style.display = 'block';
+
+  const canvas = document.getElementById('mc');
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  const bw = 310, bh = box.offsetHeight || 240;
+  let lft = ctx.tooltip.caretX + 14;
+  if (lft + bw > cw) lft = ctx.tooltip.caretX - bw - 10;
+  let top = ctx.tooltip.caretY - 20;
+  if (top + bh > ch) top = ch - bh - 8;
+  if (top < 0) top = 4;
+  box.style.left = lft + 'px';
+  box.style.top  = top + 'px';
+}
+
+function copyTip() {
+  const box = document.getElementById('tip');
+  const text = box._copyText || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const ok = document.getElementById('copy-ok');
+    if (ok) {
+      ok.style.display = 'inline';
+      setTimeout(() => { ok.style.display = 'none'; }, 2000);
+    }
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const ok = document.getElementById('copy-ok');
+    if (ok) {
+      ok.style.display = 'inline';
+      setTimeout(() => { ok.style.display = 'none'; }, 2000);
+    }
+  });
+}
+
+function renderCards(vals, dates) {
+  const nz   = vals.filter(v => v > 0);
+  if (!nz.length) { document.getElementById('cards').innerHTML = ''; return; }
+  const last  = nz[nz.length-1], first = nz[0];
+  const diff  = last - first;
+  const pct   = first ? ((diff/first)*100).toFixed(2) : 0;
+  const sym   = ccy === 'NTD' ? 'NT$' : 'US$';
+  const cc    = diff >= 0 ? '#1D9E75' : '#c0392b';
+  document.getElementById('cards').innerHTML = `
+    <div class="card">
+      <div class="card-label">期末總值（${dates[dates.length-1]}）</div>
+      <div class="card-value">${sym}${fmtN(last)}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">期初總值（${dates[0]}）</div>
+      <div class="card-value">${sym}${fmtN(first)}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">期間損益</div>
+      <div class="card-value" style="color:${cc};">${diff>=0?'+':''}${sym}${fmtN(Math.abs(diff))} (${diff>=0?'+':''}${pct}%)</div>
+    </div>`;
+}
+
+function renderLegend(funds) {
+  document.getElementById('lgd').innerHTML = funds.map((f,i) =>
+    `<span class="legend-item">
+      <span class="legend-dot" style="background:${COLORS[i%COLORS.length]};"></span>
+      ${f} (${isUSD(f)?'USD':'NTD'})
+    </span>`
+  ).join('');
+}
+
+function setCcy(c) {
+  ccy = c;
+  document.getElementById('bntd').className = 'ccy-btn' + (c==='NTD' ? ' active' : '');
+  document.getElementById('busd').className = 'ccy-btn' + (c==='USD' ? ' active' : '');
+  redraw();
+}
+
+function setStatus(msg, isErr) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = isErr ? 'error' : '';
+}
+
+function fmtN(v) { return Math.abs(v)>=1000000 ? (v/1000000).toFixed(2)+'M' : Math.round(v).toLocaleString(); }
+function fmtAxis(v) { const s=ccy==='NTD'?'NT$':'US$'; return Math.abs(v)>=1000000 ? s+(v/1000000).toFixed(1)+'M' : s+Math.round(v).toLocaleString(); }
+function fmtU(u) { return Math.abs(u)>=10000 ? u.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',') : u.toFixed(4); }
+
+loadAll();
+</script>
+</body>
+</html>
