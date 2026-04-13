@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>安聯人壽匯率/基金抓取頁面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+    .loader {
+      border-top-color: #3b82f6;
+      -webkit-animation: spinner 1.5s linear infinite;
+      animation: spinner 1.5s linear infinite;
+    }
+    @keyframes spinner {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8 text-gray-800">
+  <div id="root" class="max-w-4xl mx-auto"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const APP_VERSION = 'v1.3.9+';
+
+    // ==========================================
+    // ⚠️ 您的 GAS 網頁應用程式網址
+    // ==========================================
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
+
+    const Icons = {
+      Refresh:     () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>,
+      Database:    () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>,
+      Alert:       () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+      Check:       () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+      Clipboard:   () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>,
+      Info:        () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>,
+      Close:       () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+      Chart:       () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
+      Settings:    () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+      External:    () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>,
+      ShieldAlert: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
+      Tag:         () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>,
+      Eye:         () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+      Copy:        () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+      Sort:    (p) => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>,
+      Diamond:     () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M11 3v18"/><path d="M5 3l4.6 6H14.4L19 3"/></svg>
+    };
+
+    function App() {
+      const [fetchedData,        setFetchedData]        = useState(null);
+      const [historyRates,       setHistoryRates]       = useState([]);
+      const [isFetching,         setIsFetching]         = useState(false);
+      const [fetchError,         setFetchError]         = useState('');
+      const [activeTab,          setActiveTab]          = useState('auto');
+      const [manualText,         setManualText]         = useState('');
+      const [customTargetCode,   setCustomTargetCode]   = useState('');
+      const [detectedTargetCode, setDetectedTargetCode] = useState('');
+      const [isCodeConfirmed,    setIsCodeConfirmed]    = useState(false);
+      const [isWriting,          setIsWriting]          = useState(false);
+      const [writeStatus,        setWriteStatus]        = useState({ type: '', msg: '' });
+      const [writeMode,          setWriteMode]          = useState('count');
+      const [writeCountQuick,    setWriteCountQuick]    = useState('1');
+      const [customWriteCount,   setCustomWriteCount]   = useState(1);
+      const [startDate,          setStartDate]          = useState('');
+      const [endDate,            setEndDate]            = useState('');
+      const [showInstructions,   setShowInstructions]   = useState(false);
+      const [showAllPreview,     setShowAllPreview]     = useState(false);
+      const [isCopied,           setIsCopied]           = useState(false);
+      const [sortOrder,          setSortOrder]          = useState('desc');
+
+      const isDivTab = activeTab === 'ntdmd-div-manual' || activeTab === 'dividend-manual';
+
+      // updateDefaultDateRange：相容含 baseDate 的配息資料
+      const updateDefaultDateRange = (ratesList) => {
+        if (!ratesList || ratesList.length === 0) return;
+        const formattedDates = ratesList.map(r => (r.date || r.baseDate).replace(/\//g, '-'));
+        const sortedDates = [...formattedDates].sort();
+        setStartDate(sortedDates[0]);
+        setEndDate(sortedDates[sortedDates.length - 1]);
+      };
+
+      const switchTab = (tabName) => {
+        setActiveTab(tabName);
+        setFetchedData(null);
+        setHistoryRates([]);
+        setManualText('');
+        setFetchError('');
+        setWriteStatus({ type: '', msg: '' });
+        setDetectedTargetCode('');
+        setIsCodeConfirmed(false);
+        setShowAllPreview(false);
+        setIsCopied(false);
+        setSortOrder('desc');
+      };
+
+      // ── 匯率解析（原 v1.3.9）─────────────────────────────────
+      const parseExchangeRateData = (htmlText) => {
+        let ratesList = [];
+        const cleanText = htmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        const headerIndex = cleanText.lastIndexOf('匯率日期');
+        let searchArea = cleanText;
+        if (headerIndex !== -1) searchArea = cleanText.substring(headerIndex);
+        const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)/g;
+        let match;
+        while ((match = regex.exec(searchArea)) !== null) {
+          ratesList.push({ date: match[1], buy: match[2], sell: match[3] });
+        }
+        if (ratesList.length > 0) {
+          setFetchedData(ratesList[0]); setHistoryRates(ratesList);
+          updateDefaultDateRange(ratesList); setFetchError(''); setManualText('');
+        } else { setFetchError('無法解析資料 (未找到符合「日期+買入+賣出」格式的清單)'); }
+      };
+
+      // ── 淨值解析（原 v1.3.9）─────────────────────────────────
+      const parseFundData = (htmlText) => {
+        let fundList = [];
+        const cleanText = htmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        const allianzCodeRegex = /\b([A-Z]{3}[A-Z]{2}\d{4})\b/i;
+        const codeMatch = cleanText.match(allianzCodeRegex);
+        if (codeMatch) {
+          setDetectedTargetCode(codeMatch[1].toUpperCase());
+        } else {
+          const fallbackRegex = /(?:標的代碼|代碼|代號)\s*[:：]\s*([A-Z0-9]+)/i;
+          const fallbackMatch = cleanText.match(fallbackRegex);
+          setDetectedTargetCode(fallbackMatch ? fallbackMatch[1].trim().toUpperCase() : '');
+        }
+        const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)/g;
+        let match;
+        while ((match = regex.exec(cleanText)) !== null) {
+          fundList.push({ date: match[1], value: match[2] });
+        }
+        if (fundList.length > 0) {
+          setFetchedData(fundList[0]); setHistoryRates(fundList);
+          updateDefaultDateRange(fundList); setFetchError(''); setManualText(''); setIsCodeConfirmed(false);
+        } else { setFetchError('無法解析資料 (未找到符合「日期+基金淨值」格式的清單)'); }
+      };
+
+      // ── NTDMD0020 配息解析（v1.5.2新增）──────────────────────
+      const parseNTDMDDividendData = (htmlText) => {
+        let divList = [];
+        const cleanText = htmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        setDetectedTargetCode('NTDMD0020');
+        const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)\s+(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)/g;
+        let match;
+        while ((match = regex.exec(cleanText)) !== null) {
+          divList.push({ baseDate: match[1], code: 'NTDMD0020', nav: match[2], payoutDate: match[3], amount: match[4] });
+        }
+        if (divList.length > 0) {
+          setFetchedData(divList[0]); setHistoryRates(divList);
+          updateDefaultDateRange(divList); setFetchError(''); setManualText('');
+        } else { setFetchError('無法解析 NTDMD0020 配息資訊，請確認內容格式。'); }
+      };
+
+      // ── 通用基金配息解析（v1.5.2新增）────────────────────────
+      const parseDividendData = (htmlText) => {
+        let divList = [];
+        const cleanText = htmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        const allianzCodeRegex = /\b([A-Z]{3}[A-Z]{2}\d{4})\b/i;
+        const codeMatch = cleanText.match(allianzCodeRegex);
+        const codeFound = codeMatch ? codeMatch[1].toUpperCase() : '';
+        setDetectedTargetCode(codeFound);
+        const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)\s+(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)/g;
+        let match;
+        while ((match = regex.exec(cleanText)) !== null) {
+          divList.push({ baseDate: match[1], code: codeFound, nav: match[2], divAmt: match[3], reinvestDate: match[4], distUnits: match[5] });
+        }
+        if (divList.length > 0) {
+          setFetchedData(divList[0]); setHistoryRates(divList);
+          updateDefaultDateRange(divList); setFetchError(''); setManualText('');
+        } else { setFetchError('無法解析全析配息資訊，請確認格式。'); }
+      };
+
+      // ── 自動抓取（原 v1.3.9）─────────────────────────────────
+      const handleFetchRates = async () => {
+        setIsFetching(true); setFetchError(''); setFetchedData(null); setWriteStatus({ type: '', msg: '' });
+        try {
+          const targetUrl = 'https://es.allianz.com.tw/customer/product/investment/VFBAZ/exchange-rate';
+          const proxies = [
+            { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, type: 'json' },
+            { url: `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, type: 'text' },
+            { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, type: 'text' }
+          ];
+          let htmlText = null;
+          for (const proxy of proxies) {
+            try {
+              const response = await fetch(proxy.url, { mode: 'cors' });
+              if (response.ok) {
+                if (proxy.type === 'json') { const data = await response.json(); if (data && data.contents) { htmlText = data.contents; break; } }
+                else { htmlText = await response.text(); if (htmlText) break; }
+              }
+            } catch (err) { console.warn("Proxy failed"); }
+          }
+          if (!htmlText) { setFetchError('自動抓取受阻。請手動貼上內容。'); switchTab('manual'); setIsFetching(false); return; }
+          parseExchangeRateData(htmlText);
+        } catch (error) { setFetchError(`錯誤：${error.message}`); switchTab('manual'); }
+        finally { setIsFetching(false); }
+      };
+
+      // ── 手動解析入口 ──────────────────────────────────────────
+      const handleManualParse = () => {
+        if (!manualText.trim()) { alert('請先貼上網頁內容'); return; }
+        if      (activeTab === 'ntdmd-div-manual')                          parseNTDMDDividendData(manualText);
+        else if (activeTab === 'dividend-manual')                           parseDividendData(manualText);
+        else if (activeTab === 'fund-manual' || activeTab === 'custom-target') parseFundData(manualText);
+        else                                                                 parseExchangeRateData(manualText);
+      };
+
+      // ── 過濾（相容 baseDate）──────────────────────────────────
+      const filterData = useMemo(() => {
+        if (!historyRates.length) return [];
+        let result = [...historyRates];
+        if (writeMode === 'range') {
+          const sDate = startDate ? startDate.replace(/-/g, '/') : '0000/00/00';
+          const eDate = endDate   ? endDate.replace(/-/g, '/')   : '9999/99/99';
+          result = result.filter(r => (r.date || r.baseDate) >= sDate && (r.date || r.baseDate) <= eDate);
+        } else {
+          let count = writeCountQuick === 'all'    ? historyRates.length :
+                      writeCountQuick === 'custom' ? parseInt(customWriteCount, 10) :
+                                                     parseInt(writeCountQuick, 10);
+          result = result.slice(0, Math.min(count || 1, historyRates.length));
+        }
+        return result;
+      }, [historyRates, writeMode, writeCountQuick, customWriteCount, startDate, endDate]);
+
+      // ── 排序（相容 baseDate）──────────────────────────────────
+      const finalProcessedRates = useMemo(() => {
+        const result = [...filterData];
+        result.sort((a, b) => {
+          const dateA = (a.date || a.baseDate).replace(/\//g, '');
+          const dateB = (b.date || b.baseDate).replace(/\//g, '');
+          return sortOrder === 'desc' ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
+        });
+        return result;
+      }, [filterData, sortOrder]);
+
+      const isCodeMismatch = useMemo(() => {
+        if (activeTab !== 'custom-target') return false;
+        if (detectedTargetCode && customTargetCode.trim().toUpperCase() !== detectedTargetCode.toUpperCase()) return true;
+        if (!detectedTargetCode && !customTargetCode.trim()) return true;
+        return false;
+      }, [activeTab, customTargetCode, detectedTargetCode]);
+
+      // ── 複製（支援配息多欄）──────────────────────────────────
+      const handleCopyData = () => {
+        if (finalProcessedRates.length === 0) return;
+        let finalString = '';
+        if (activeTab === 'ntdmd-div-manual') {
+          const header = "資產撥回基準日\t標的代碼\t基準日淨值\t每股稅後資產撥回金額\t資產撥回日";
+          const rows   = finalProcessedRates.map(r => `${r.baseDate}\t${r.code}\t${r.nav}\t${r.amount}\t${r.payoutDate}`).join('\n');
+          finalString  = header + '\n' + rows;
+        } else if (activeTab === 'dividend-manual') {
+          const header = "配息/撥回基準日\t標的代碼\t基準日淨值\t每股稅後配息金額\t再投資日\t每股稅後分配單位";
+          const rows   = finalProcessedRates.map(r => `${r.baseDate}\t${r.code}\t${r.nav}\t${r.divAmt}\t${r.reinvestDate}\t${r.distUnits}`).join('\n');
+          finalString  = header + '\n' + rows;
+        } else {
+          const headerText  = activeTab.includes('fund') || activeTab.includes('target') ? "日期\t淨值" : "日期\t買入匯率";
+          const contentText = finalProcessedRates.map(r => `${r.date}\t${r.value || r.buy}`).join('\n');
+          finalString       = `${headerText}\n${contentText}`;
+        }
+        const textArea = document.createElement("textarea");
+        textArea.value = finalString;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try { document.execCommand('copy'); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000); }
+        catch (err) { console.error('複製失敗', err); }
+        document.body.removeChild(textArea);
+      };
+
+      // ── 寫入工作表（配息分頁不寫入）──────────────────────────
+      const handleWriteToSheet = async () => {
+        if (isDivTab) { alert('配息分頁資料僅供預覽與複製，不支援寫入工作表。'); return; }
+        if (!finalProcessedRates.length) return;
+        if (activeTab === 'custom-target' && !customTargetCode.trim()) { alert('請輸入標的代碼'); return; }
+        if (isCodeMismatch && !isCodeConfirmed) { alert('請先勾選下方「確認標的代碼無誤」的方塊以進行寫入。'); return; }
+        setIsWriting(true);
+        setWriteStatus({ type: '', msg: `正在寫入 ${finalProcessedRates.length} 筆資料...` });
+        let successCount = 0; let errorList = [];
+        try {
+          const targetHeader = activeTab === 'fund-manual'   ? 'NTDMD0020' :
+                               activeTab === 'custom-target' ? customTargetCode.trim().toUpperCase() :
+                                                               '美元兌新台幣匯率';
+          for (const rate of finalProcessedRates) {
+            const valueToWrite = (activeTab === 'fund-manual' || activeTab === 'custom-target') ? rate.value : rate.buy;
+            const url = `${GAS_URL}?type=write&date=${encodeURIComponent(rate.date)}&value=${encodeURIComponent(valueToWrite)}&header=${encodeURIComponent(targetHeader)}`;
+            try {
+              const response = await fetch(url); const result = await response.json();
+              if (result.success) successCount++; else errorList.push(`${rate.date}: ${result.error}`);
+            } catch (err) { errorList.push(`${rate.date}: 請求失敗`); }
+            await new Promise(res => setTimeout(res, 300));
+          }
+          if (errorList.length === 0) setWriteStatus({ type: 'success', msg: `全部寫入成功 (${successCount} 筆)。` });
+          else setWriteStatus({ type: 'success', msg: `完成：成功 ${successCount} 筆，失敗 ${errorList.length} 筆。` });
+        } catch (error) { setWriteStatus({ type: 'error', msg: `錯誤：${error.message}` }); }
+        finally { setIsWriting(false); }
+      };
+
+      // ══════════════════════════════════════════════════════════
+      return (
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+
+          {/* Header */}
+          <div className="bg-blue-800 text-white px-6 py-5 flex items-center justify-between">
+            <div>
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-2xl font-bold tracking-wide">安聯人壽匯率/基金抓取系統</h1>
+                <span className="text-xs font-medium bg-blue-700 text-blue-100 px-2 py-0.5 rounded-full border border-blue-600 shadow-sm">{APP_VERSION}</span>
+              </div>
+              <p className="text-blue-200 text-sm mt-1">匯率 / NTDMD0020 / 自訂標的解析 / 配息明細</p>
+            </div>
+            <button onClick={() => setShowInstructions(true)} className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-lg text-sm transition-colors border border-blue-600 shadow-sm">
+              <Icons.Info /> 使用說明
+            </button>
+          </div>
+
+          <div className="p-6">
+
+            {/* Tab 列 */}
+            <div className="flex flex-wrap border-b border-gray-200 mb-6 gap-y-1">
+              <button onClick={() => switchTab('auto')} className={`flex items-center gap-2 py-3 px-4 text-sm border-b-2 transition-colors ${activeTab === 'auto' ? 'border-blue-600 text-blue-600 bg-blue-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                <Icons.Refresh /> 匯率-自動
+              </button>
+              <button onClick={() => switchTab('manual')} className={`flex items-center gap-2 py-3 px-4 text-sm border-b-2 transition-colors ${activeTab === 'manual' ? 'border-orange-600 text-orange-600 bg-orange-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                <Icons.Clipboard /> 匯率-手動
+              </button>
+              <button onClick={() => switchTab('fund-manual')} className={`flex items-center gap-2 py-3 px-4 text-sm border-b-2 transition-colors ${activeTab === 'fund-manual' ? 'border-purple-600 text-purple-600 bg-purple-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                <Icons.Chart /> NTDMD0020
+              </button>
+              <button onClick={() => switchTab('custom-target')} className={`flex items-center gap-2 py-3 px-4 text-sm border-b-2 transition-colors ${activeTab === 'custom-target' ? 'border-emerald-600 text-emerald-600 bg-emerald-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                <Icons.Settings /> 自訂標定解析
+              </button>
+              {/* 以下兩個為 v1.5.2 新增分頁 */}
+              <button onClick={() => switchTab('ntdmd-div-manual')} className={`flex items-center gap-2 py-3 px-4 text-sm border-b-2 transition-colors ${activeTab === 'ntdmd-div-manual' ? 'border-cyan-600 text-cyan-600 bg-cyan-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                <Icons.Diamond /> NTDMD0020 配息
+              </button>
+              <button onClick={() => switchTab('dividend-manual')} className={`flex items-center gap-2 py-3 px-4 text-sm border-b-2 transition-colors ${activeTab === 'dividend-manual' ? 'border-rose-600 text-rose-600 bg-rose-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                <Icons.Chart /> 基金配息全析
+              </button>
+            </div>
+
+            {/* 輸入區 */}
+            <div className="mb-8">
+
+              {/* 匯率-自動 */}
+              {activeTab === 'auto' && (
+                <div className="flex flex-col md:flex-row gap-4 items-end animate-fadeIn">
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider underline">匯率網址</label>
+                    <a href="https://es.allianz.com.tw/customer/product/investment/VFBAZ/exchange-rate" target="_blank" className="flex items-center gap-1.5 bg-blue-50 p-2.5 rounded-lg text-xs text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors">
+                      https://es.allianz.com.tw/customer/product/investment/VFBAZ/exchange-rate <Icons.External />
+                    </a>
+                  </div>
+                  <button onClick={handleFetchRates} disabled={isFetching} className="w-full md:w-auto flex items-center justify-center gap-2 text-white bg-blue-600 hover:bg-blue-700 font-bold rounded-lg px-6 py-2.5 shadow-md">
+                    {isFetching ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full loader"></div> : <Icons.Refresh />} 開始抓取
+                  </button>
+                </div>
+              )}
+
+              {/* 匯率-手動 */}
+              {activeTab === 'manual' && (
+                <div className="animate-fadeIn">
+                  <div className="w-full bg-white border border-orange-200 rounded-xl p-5 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-orange-700 flex items-center gap-2"><Icons.Clipboard /> 貼上【匯率】網頁內容</h4>
+                      <a href="https://es.allianz.com.tw/customer/product/investment/VFBAZ/exchange-rate" target="_blank" className="text-xs text-blue-600 hover:underline flex items-center gap-1">前往匯率網頁 <Icons.External /></a>
+                    </div>
+                    <textarea className="w-full h-32 p-3 border border-orange-100 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm outline-none shadow-inner" placeholder="全選並複製內容後在此貼上..." value={manualText} onChange={(e) => setManualText(e.target.value)}></textarea>
+                    <button onClick={handleManualParse} className="mt-4 w-full md:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg px-8 py-2.5 shadow-md"><Icons.Check /> 解析匯率內容</button>
+                  </div>
+                </div>
+              )}
+
+              {/* NTDMD0020 淨值 */}
+              {activeTab === 'fund-manual' && (
+                <div className="animate-fadeIn">
+                  <div className="w-full bg-white border border-purple-200 rounded-xl p-5 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-purple-700 flex items-center gap-2"><Icons.Chart /> 貼上【NTDMD0020】內容</h4>
+                      <a href="https://es.allianz.com.tw/customer/product/investment/VUBF/target-information/NTDMD0020/FUND_PRICE" target="_blank" className="text-xs text-blue-600 hover:underline flex items-center gap-1">前往淨值網頁 <Icons.External /></a>
+                    </div>
+                    <textarea className="w-full h-32 p-3 border border-purple-100 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm outline-none shadow-inner" placeholder="全選並複製內容後在此貼上..." value={manualText} onChange={(e) => setManualText(e.target.value)}></textarea>
+                    <button onClick={handleManualParse} className="mt-4 w-full md:w-auto flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg px-8 py-2.5 shadow-md"><Icons.Check /> 解析基金內容</button>
+                  </div>
+                </div>
+              )}
+
+              {/* 自訂標的 */}
+              {activeTab === 'custom-target' && (
+                <div className="animate-fadeIn">
+                  <div className="w-full bg-white border border-emerald-200 rounded-xl p-5 shadow-sm">
+                    <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <label className="text-sm font-bold text-emerald-800">投資標的代碼 (試算表標題)：</label>
+                          {detectedTargetCode && (
+                            <button onClick={() => setCustomTargetCode(detectedTargetCode)} className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold hover:bg-blue-700 transition-colors flex items-center gap-1">
+                              <Icons.Check /> 填入偵測：{detectedTargetCode}
+                            </button>
+                          )}
+                        </div>
+                        <input type="text" placeholder="例如：NTDEQ0010"
+                          className={`w-full p-2.5 border rounded-lg focus:ring-2 outline-none font-bold shadow-sm transition-colors ${isCodeMismatch && manualText ? 'border-orange-400 bg-orange-50 focus:ring-orange-500 text-orange-700' : 'border-emerald-300 focus:ring-emerald-500 text-emerald-700'}`}
+                          value={customTargetCode} onChange={(e) => setCustomTargetCode(e.target.value)} />
+                        {isCodeMismatch && manualText && (
+                          <p className="text-[11px] text-orange-600 mt-1 flex items-center gap-1 font-bold">
+                            <Icons.ShieldAlert /> 代碼不符：手輸 "{customTargetCode}" 與內容偵測 "{detectedTargetCode || '未偵測到符合格式字串'}" 不一致。
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex-1 w-full">
+                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider underline">標的總覽網址</label>
+                        <a href="https://es.allianz.com.tw/customer/product/investment/VAS/target-information" target="_blank" className="flex items-center gap-1.5 bg-blue-50 p-2.5 rounded-lg text-[10px] text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors leading-tight h-[42px]">
+                          https://es.allianz.com.tw/customer/product/investment/VAS/target-information <Icons.External />
+                        </a>
+                      </div>
+                    </div>
+                    <h4 className="font-bold text-emerald-700 flex items-center gap-2 mb-3"><Icons.Clipboard /> 貼上自訂標的網頁內容</h4>
+                    <textarea className="w-full h-32 p-3 border border-emerald-100 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm outline-none shadow-inner" placeholder="請在安聯網頁全選複製後，在此貼上內容..." value={manualText} onChange={(e) => setManualText(e.target.value)}></textarea>
+                    <button onClick={handleManualParse} className="mt-4 w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg px-8 py-2.5 shadow-md"><Icons.Check /> 解析內容代碼與數值</button>
+                  </div>
+                </div>
+              )}
+
+              {/* NTDMD0020 配息（新增）*/}
+              {activeTab === 'ntdmd-div-manual' && (
+                <div className="animate-fadeIn">
+                  <div className="w-full bg-white border border-cyan-200 rounded-xl p-5 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-cyan-700 flex items-center gap-2"><Icons.Diamond /> 貼上【NTDMD0020 配息】網頁內容</h4>
+                      <a href="https://es.allianz.com.tw/customer/product/investment/VUBF/target-information/NTDMD0020/FUND_ASSET" target="_blank" className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-bold">資產撥回頁面 <Icons.External /></a>
+                    </div>
+                    <p className="text-xs text-cyan-700 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-2 mb-3 font-bold">
+                      ⚠️ 此分頁資料僅供預覽與複製，不支援寫入工作表。
+                    </p>
+                    <textarea className="w-full h-32 p-3 border border-cyan-100 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm outline-none shadow-inner" placeholder="請至安聯官網 NTDMD0020 資產撥回頁面，全選複製後在此貼上..." value={manualText} onChange={(e) => setManualText(e.target.value)}></textarea>
+                    <button onClick={handleManualParse} className="mt-4 w-full md:w-auto flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg px-8 py-2.5 shadow-md"><Icons.Check /> 解析配息內容</button>
+                  </div>
+                </div>
+              )}
+
+              {/* 基金配息全析（新增）*/}
+              {activeTab === 'dividend-manual' && (
+                <div className="animate-fadeIn">
+                  <div className="w-full bg-white border border-rose-200 rounded-xl p-5 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-rose-700 flex items-center gap-2"><Icons.Chart /> 貼上【基金配息全析】網頁內容</h4>
+                      <a href="https://es.allianz.com.tw/customer/product/target/interest" target="_blank" className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-bold">安聯人壽配息專區 <Icons.External /></a>
+                    </div>
+                    <p className="text-xs text-rose-700 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 mb-3 font-bold">
+                      ⚠️ 此分頁資料僅供預覽與複製，不支援寫入工作表。
+                    </p>
+                    <textarea className="w-full h-32 p-3 border border-rose-100 rounded-lg focus:ring-2 focus:ring-rose-500 text-sm outline-none shadow-inner" placeholder="請至安聯官網配息專區，全選複製後在此貼上..." value={manualText} onChange={(e) => setManualText(e.target.value)}></textarea>
+                    <button onClick={handleManualParse} className="mt-4 w-full md:w-auto flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg px-8 py-2.5 shadow-md"><Icons.Check /> 解析配息全析內容</button>
+                  </div>
+                </div>
+              )}
+
+            </div>{/* end 輸入區 */}
+
+            {/* 結果預覽區 */}
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 min-h-[160px] transition-all shadow-inner">
+              {fetchError ? (
+                <div className="flex flex-col items-center justify-center text-orange-600 bg-orange-50 px-6 py-8 rounded-lg border border-orange-100">
+                  <Icons.Alert /><p className="mt-2 font-bold text-center">{fetchError}</p>
+                </div>
+              ) : fetchedData ? (
+                <div className="animate-fadeIn">
+                  <h3 className="text-gray-500 font-bold mb-4 text-center underline underline-offset-4 tracking-widest">解析成功預覽</h3>
+
+                  {/* 摘要卡片 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-white border-l-4 border-blue-500 shadow-sm p-4 rounded-r-lg">
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                        {isDivTab ? '最近基準日' : '資料最新日期'}
+                      </p>
+                      <p className="text-2xl font-black text-gray-800">{fetchedData.date || fetchedData.baseDate}</p>
+                    </div>
+
+                    {activeTab === 'ntdmd-div-manual' && (<>
+                      <div className="bg-white border-l-4 border-cyan-500 shadow-sm p-4 rounded-r-lg">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">基準日淨值</p>
+                        <p className="text-2xl font-black text-cyan-600">{fetchedData.nav}</p>
+                      </div>
+                      <div className="bg-white border-l-4 border-emerald-500 shadow-sm p-4 rounded-r-lg">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">稅後撥回金額</p>
+                        <p className="text-2xl font-black text-emerald-600">{fetchedData.amount}</p>
+                      </div>
+                    </>)}
+
+                    {activeTab === 'dividend-manual' && (<>
+                      <div className="bg-white border-l-4 border-rose-500 shadow-sm p-4 rounded-r-lg">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">稅後配息金額</p>
+                        <p className="text-2xl font-black text-rose-600">{fetchedData.divAmt}</p>
+                      </div>
+                      <div className="bg-white border-l-4 border-emerald-500 shadow-sm p-4 rounded-r-lg">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">每股分配單位</p>
+                        <p className="text-2xl font-black text-emerald-600">{fetchedData.distUnits}</p>
+                      </div>
+                    </>)}
+
+                    {activeTab === 'custom-target' && (
+                      <div className="bg-white border-l-4 border-emerald-500 shadow-sm p-4 rounded-r-lg">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1"><Icons.Tag /> 網頁偵測代碼</p>
+                        <p className={`text-2xl font-black ${detectedTargetCode ? 'text-emerald-600' : 'text-gray-300 italic'}`}>{detectedTargetCode || '未偵測到'}</p>
+                      </div>
+                    )}
+
+                    {(activeTab === 'auto' || activeTab === 'manual') && (<>
+                      <div className="bg-white border-l-4 border-emerald-500 shadow-sm p-4 rounded-r-lg">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">買入匯率 (寫入值)</p>
+                        <p className="text-2xl font-black text-emerald-600">{fetchedData.buy}</p>
+                      </div>
+                      <div className="bg-white border-l-4 border-gray-300 shadow-sm p-4 rounded-r-lg opacity-40">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">賣出 (略過)</p>
+                        <p className="text-2xl font-black text-gray-400">{fetchedData.sell}</p>
+                      </div>
+                    </>)}
+
+                    {(activeTab === 'fund-manual' || (activeTab === 'custom-target' && fetchedData.value)) && (
+                      <div className={`bg-white border-l-4 border-purple-500 shadow-sm p-4 rounded-r-lg ${activeTab === 'fund-manual' ? 'lg:col-span-2' : ''}`}>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">基金淨值 (寫入值)</p>
+                        <p className="text-2xl font-black text-purple-600">{fetchedData.value}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 寫入設定 */}
+                  <div className="mt-8 border-t border-gray-200 pt-8">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icons.Settings />
+                      <h3 className="text-lg font-black text-gray-800">{isDivTab ? '過濾與匯出設定' : '寫入設定與過濾'}</h3>
+                    </div>
+                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm font-bold"><input type="radio" checked={writeMode === 'count'} onChange={() => setWriteMode('count')} /> 按筆數</label>
+                          <label className="flex items-center gap-2 cursor-pointer text-sm font-bold"><input type="radio" checked={writeMode === 'range'} onChange={() => setWriteMode('range')} /> 日期區間</label>
+                        </div>
+                        {writeMode === 'count' ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <select value={writeCountQuick} onChange={(e) => setWriteCountQuick(e.target.value)} className="bg-gray-50 border border-gray-300 rounded-lg text-sm p-2 outline-none">
+                              <option value="1">最新 1 筆</option><option value="3">近 3 筆</option><option value="5">近 5 筆</option><option value="all">全部資料</option><option value="custom">自訂...</option>
+                            </select>
+                            {writeCountQuick === 'custom' && <input type="number" min="1" value={customWriteCount} onChange={(e) => setCustomWriteCount(e.target.value)} className="w-20 p-2 border border-gray-300 rounded-lg text-sm" />}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm" />
+                            <input type="date" value={endDate}   onChange={(e) => setEndDate(e.target.value)}   className="p-2 border border-gray-300 rounded-lg text-sm" />
+                          </div>
+                        )}
+                        {isCodeMismatch && (
+                          <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg animate-fadeIn">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <input type="checkbox" className="mt-1 w-4 h-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500" checked={isCodeConfirmed} onChange={(e) => setIsCodeConfirmed(e.target.checked)} />
+                              <span className="text-xs font-bold text-orange-800 leading-tight">
+                                代碼比對不符：手輸與偵測代碼不一致，我已確認要將資料寫入至工作表標題為「{customTargetCode || '(空)'}」的欄位。
+                              </span>
+                            </label>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col justify-center">
+                        <div className="text-sm font-bold text-gray-500 mb-2 text-center">
+                          預計{isDivTab ? '複製' : '寫入'}：<span className="text-blue-700 font-black">{finalProcessedRates.length} 筆</span> 資料
+                        </div>
+                        {isDivTab ? (
+                          <div className="w-full flex items-center justify-center bg-gray-100 text-gray-400 font-bold rounded-lg py-4 border border-dashed border-gray-300 text-sm">
+                            配息分頁僅供預覽，請使用「複製資料」
+                          </div>
+                        ) : (
+                          <button onClick={handleWriteToSheet} disabled={isWriting || !finalProcessedRates.length || (isCodeMismatch && !isCodeConfirmed)}
+                            className={`w-full flex items-center justify-center gap-2 text-white font-black rounded-lg py-4 shadow-lg transition-all active:scale-95 ${isWriting || (isCodeMismatch && !isCodeConfirmed) ? 'bg-gray-400 cursor-not-allowed grayscale' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                            {isWriting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full loader"></div> : <Icons.Database />}
+                            確認並開始寫入
+                          </button>
+                        )}
+                        {isCodeMismatch && !isCodeConfirmed && <p className="text-[10px] text-orange-600 font-bold mt-2 text-center italic animate-pulse">※ 代碼衝突，請先勾選左方確認方塊</p>}
+                      </div>
+                    </div>
+
+                    {writeStatus.msg && (
+                      <div className={`mt-4 p-4 rounded-lg flex items-center gap-3 font-bold text-sm ${writeStatus.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                        {writeStatus.msg}
+                      </div>
+                    )}
+
+                    {/* 資料預覽表格 */}
+                    <div className="mt-8">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 px-1 gap-3">
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                          <span>Data Preview (經過濾)</span>
+                          <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-bold">{finalProcessedRates.length} 筆資料</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                          <button onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')} className="flex items-center gap-1.5 text-xs font-bold text-purple-600 hover:text-purple-800 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100 transition-all shadow-sm active:scale-95">
+                            <Icons.Sort className={sortOrder === 'asc' ? 'rotate-180' : ''} /> 日期：{sortOrder === 'desc' ? '由大到小' : '由小到大'}
+                          </button>
+                          <button onClick={handleCopyData} className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all shadow-sm active:scale-95 ${isCopied ? 'bg-green-600 border-green-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                            {isCopied ? <Icons.Check /> : <Icons.Copy />} {isCopied ? '已複製！' : '複製資料'}
+                          </button>
+                          <button onClick={() => setShowAllPreview(!showAllPreview)} className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-all shadow-sm active:scale-95">
+                            <Icons.Eye /> {showAllPreview ? '縮減預覽' : `展開全部資料`}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-inner custom-scrollbar">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-gray-100 sticky top-0 font-black text-gray-600 border-b">
+                            {activeTab === 'ntdmd-div-manual' ? (
+                              <tr>
+                                <th className="px-4 py-3 whitespace-nowrap">基準日</th>
+                                <th className="px-4 py-3 whitespace-nowrap">代碼</th>
+                                <th className="px-4 py-3 whitespace-nowrap text-cyan-600">基準日淨值</th>
+                                <th className="px-4 py-3 whitespace-nowrap text-emerald-600">稅後撥回金額</th>
+                                <th className="px-4 py-3 whitespace-nowrap">撥回日</th>
+                              </tr>
+                            ) : activeTab === 'dividend-manual' ? (
+                              <tr>
+                                <th className="px-4 py-3 whitespace-nowrap">基準日</th>
+                                <th className="px-4 py-3 whitespace-nowrap">代碼</th>
+                                <th className="px-4 py-3 whitespace-nowrap">基準日淨值</th>
+                                <th className="px-4 py-3 whitespace-nowrap text-rose-600">稅後配息金額</th>
+                                <th className="px-4 py-3 whitespace-nowrap">再投資日</th>
+                                <th className="px-4 py-3 whitespace-nowrap text-emerald-600">分配單位</th>
+                              </tr>
+                            ) : (
+                              <tr>
+                                <th className="px-4 py-3">#</th>
+                                <th className="px-4 py-3">日期</th>
+                                <th className="px-4 py-3">數值 (將寫入)</th>
+                              </tr>
+                            )}
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {(showAllPreview ? finalProcessedRates : finalProcessedRates.slice(0, 10)).map((r, i) => (
+                              <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                {activeTab === 'ntdmd-div-manual' ? (
+                                  <>
+                                    <td className="px-4 py-3 font-bold text-gray-800">{r.baseDate}</td>
+                                    <td className="px-4 py-3 text-blue-800 font-mono">{r.code}</td>
+                                    <td className="px-4 py-3 font-bold text-cyan-600">{r.nav}</td>
+                                    <td className="px-4 py-3 font-black text-emerald-600">{r.amount}</td>
+                                    <td className="px-4 py-3 text-gray-500">{r.payoutDate}</td>
+                                  </>
+                                ) : activeTab === 'dividend-manual' ? (
+                                  <>
+                                    <td className="px-4 py-3 font-bold text-gray-800">{r.baseDate}</td>
+                                    <td className="px-4 py-3 text-blue-800 font-mono">{r.code}</td>
+                                    <td className="px-4 py-3 font-bold text-gray-600">{r.nav}</td>
+                                    <td className="px-4 py-3 font-black text-rose-600">{r.divAmt}</td>
+                                    <td className="px-4 py-3 text-gray-500">{r.reinvestDate}</td>
+                                    <td className="px-4 py-3 font-black text-emerald-600">{r.distUnits}</td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="px-4 py-3 text-gray-300 font-mono italic">{i + 1}</td>
+                                    <td className="px-4 py-3 font-medium text-gray-600">{r.date}</td>
+                                    <td className="px-4 py-3 font-black text-blue-600">{r.value || r.buy}</td>
+                                  </>
+                                )}
+                              </tr>
+                            ))}
+                            {finalProcessedRates.length === 0 && (
+                              <tr><td colSpan="6" className="px-4 py-12 text-center text-gray-400 italic font-medium">目前選取的日期範圍內沒有任何資料可供預覽。</td></tr>
+                            )}
+                            {!showAllPreview && finalProcessedRates.length > 10 && (
+                              <tr className="bg-gray-50/50">
+                                <td colSpan="6" className="px-4 py-4 text-center">
+                                  <button onClick={() => setShowAllPreview(true)} className="text-xs font-bold text-blue-500 hover:underline italic cursor-pointer">
+                                    還有 {finalProcessedRates.length - 10} 筆資料未顯示，點此展開全部查看...
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-300 py-12 flex flex-col items-center">
+                  <Icons.Clipboard className="mb-2 opacity-30"/>
+                  <p className="mt-4 font-bold">請先獲取或貼上資料以進行預覽</p>
+                </div>
+              )}
+            </div>{/* end 結果預覽區 */}
+          </div>
+
+          {/* 使用說明 Modal */}
+          {showInstructions && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-5 border-b bg-gray-50">
+                  <h3 className="text-lg font-black flex items-center gap-2"><Icons.Info /> 系統操作說明 - {APP_VERSION}</h3>
+                  <button onClick={() => setShowInstructions(false)} className="text-gray-400 hover:bg-gray-200 p-2 rounded-xl"><Icons.Close /></button>
+                </div>
+                <div className="p-8 overflow-y-auto space-y-5 text-sm text-gray-600 leading-relaxed">
+                  <p>1. <strong>快速排序：</strong>點擊預覽區的「日期排序」按鈕，自由切換資料順序（大到小或小到大）。此排序也會同時影響複製出的資料順序。</p>
+                  <p>2. <strong>快速複製：</strong>點擊「複製資料」按鈕，系統會將過濾後的所有資料轉為 Tab 分隔格式存入剪貼簿，方便貼入 Excel。配息分頁會自動含完整欄位標題。</p>
+                  <p>3. <strong>全視角預覽：</strong>點擊「展開全部資料」按鈕，可核對所有即將寫入試算表的數據。</p>
+                  <p>4. <strong>目標標的：</strong>匯率對應「美元兌新台幣匯率」；NTDMD0020 對應「NTDMD0020」；自訂標的則根據您輸入的標題代碼寫入。</p>
+                  <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 space-y-2">
+                    <p className="font-black text-cyan-800">🆕 新增兩個配息分頁（僅供預覽與複製，不寫入工作表）：</p>
+                    <p><strong>NTDMD0020 配息：</strong>解析欄位：基準日、標的代碼、基準日淨值、稅後撥回金額、撥回日（共 5 欄）。</p>
+                    <p><strong>基金配息全析：</strong>解析欄位：基準日、標的代碼、基準日淨值、稅後配息金額、再投資日、分配單位（共 6 欄）。</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t bg-gray-50 flex justify-end">
+                  <button onClick={() => setShowInstructions(false)} className="bg-blue-600 text-white font-black rounded-xl px-8 py-2.5 shadow-lg active:scale-95 transition-all">關閉說明</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
