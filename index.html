@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.20 (整合版)
+     版本：V2.24 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -53,23 +53,22 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   .tooltip-enter{animation:fadeIn 0.1s ease;}
   /* ── 雙端拉桿：通用 CSS 變數控制厚度 ── */
-  :root{ --slider-h: 120px; }  /* 預設 120px，齒輪可調 */
   .dual-slider-wrap{ position:relative; }
   .dual-slider-wrap input[type=range]{
     -webkit-appearance:none; appearance:none;
     position:absolute; width:100%; background:transparent;
     pointer-events:all; cursor:pointer;
-    height:var(--slider-h);
-    top:calc(50% - var(--slider-h)/2);
+    height:48px;
+    top:calc(50% - 24px);
   }
   .dual-slider-wrap input[type=range]::-webkit-slider-runnable-track{
     background:transparent; height:0;
   }
   .dual-slider-wrap input[type=range]::-webkit-slider-thumb{
     -webkit-appearance:none; appearance:none;
-    width:20px; height:20px; border-radius:50%;
-    background:#3b82f6; border:2px solid #fff;
-    box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    width:30px; height:30px; border-radius:50%;
+    background:#3b82f6; border:3px solid #fff;
+    box-shadow:0 2px 8px rgba(59,130,246,0.35);
     position:relative; z-index:1;
     margin-top:0;
   }
@@ -78,9 +77,9 @@
   }
   /* Firefox */
   .dual-slider-wrap input[type=range]::-moz-range-thumb{
-    width:20px; height:20px; border-radius:50%;
-    background:#3b82f6; border:2px solid #fff;
-    box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:pointer;
+    width:30px; height:30px; border-radius:50%;
+    background:#3b82f6; border:3px solid #fff;
+    box-shadow:0 2px 8px rgba(59,130,246,0.35); cursor:pointer;
   }
   .dual-slider-wrap input[type=range].slider-end::-moz-range-thumb{
     background:#6366f1;
@@ -395,6 +394,26 @@
             <canvas id="t3-chart"></canvas>
             <div id="tip"></div>
           </div>
+          <!-- 時間範圍雙端拉桿 -->
+          <div id="t3-slider-wrap" style="padding:20px 4px 20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569;margin-bottom:4px;">
+              <span id="t3-slider-start-lbl" style="min-width:60px;"></span>
+              <span style="color:#94a3b8;font-size:10px;">← 拖曳調整顯示範圍 →</span>
+              <span id="t3-slider-end-lbl" style="min-width:60px;text-align:right;"></span>
+            </div>
+            <div class="dual-slider-wrap" id="t3-slider-inner" style="position:relative;height:48px;">
+              <div style="position:absolute;top:50%;left:0;right:0;height:4px;margin-top:-2px;background:#e2e8f0;border-radius:2px;pointer-events:none;"></div>
+              <div id="t3-slider-track" style="position:absolute;top:50%;height:4px;margin-top:-2px;background:#3b82f6;border-radius:2px;pointer-events:none;"></div>
+              <input type="range" id="t3-slider-start" class="slider-start" min="0" max="100" step="1" value="0"
+                oninput="t3DualSliderChange('start')"
+                onmouseenter="t3ShowSliderTip('start',true)" onmouseleave="t3ShowSliderTip('start',false)">
+              <div id="t3-tip-start" class="t5-slider-tooltip"></div>
+              <input type="range" id="t3-slider-end" class="slider-end" min="0" max="100" step="1" value="100"
+                oninput="t3DualSliderChange('end')"
+                onmouseenter="t3ShowSliderTip('end',true)" onmouseleave="t3ShowSliderTip('end',false)">
+              <div id="t3-tip-end" class="t5-slider-tooltip"></div>
+            </div>
+          </div>
           <!-- Legend -->
           <div id="t3-legend" class="flex flex-wrap gap-3 mt-3"></div>
           <div id="t3-status" class="text-sm text-slate-500 text-center py-2"></div>
@@ -608,6 +627,26 @@
               border-radius:10px;padding:12px 14px;font-size:12px;pointer-events:auto;z-index:20;
               min-width:200px;max-width:280px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"></div>
           </div>
+          <!-- 時間範圍雙端拉桿 -->
+          <div id="t4-slider-wrap" style="padding:20px 4px 20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569;margin-bottom:4px;">
+              <span id="t4-slider-start-lbl" style="min-width:60px;"></span>
+              <span style="color:#94a3b8;font-size:10px;">← 拖曳調整顯示範圍 →</span>
+              <span id="t4-slider-end-lbl" style="min-width:60px;text-align:right;"></span>
+            </div>
+            <div class="dual-slider-wrap" id="t4-slider-inner" style="position:relative;height:48px;">
+              <div style="position:absolute;top:50%;left:0;right:0;height:4px;margin-top:-2px;background:#e2e8f0;border-radius:2px;pointer-events:none;"></div>
+              <div id="t4-slider-track" style="position:absolute;top:50%;height:4px;margin-top:-2px;background:#3b82f6;border-radius:2px;pointer-events:none;"></div>
+              <input type="range" id="t4-slider-start" class="slider-start" min="0" max="100" step="1" value="0"
+                oninput="t4DualSliderChange('start')"
+                onmouseenter="t4ShowSliderTip('start',true)" onmouseleave="t4ShowSliderTip('start',false)">
+              <div id="t4-tip-start" class="t5-slider-tooltip"></div>
+              <input type="range" id="t4-slider-end" class="slider-end" min="0" max="100" step="1" value="100"
+                oninput="t4DualSliderChange('end')"
+                onmouseenter="t4ShowSliderTip('end',true)" onmouseleave="t4ShowSliderTip('end',false)">
+              <div id="t4-tip-end" class="t5-slider-tooltip"></div>
+            </div>
+          </div>
           <!-- Legend 控制列 -->
           <div class="flex items-center gap-2 mt-2 mb-1 flex-wrap">
             <span class="text-xs text-slate-400">圖例</span>
@@ -715,13 +754,13 @@
           </div>
 
           <!-- 時間範圍雙端拉桿（圖表下方）-->
-          <div id="t5-slider-wrap" style="padding:10px 4px 4px;display:none;">
+          <div id="t5-slider-wrap" style="padding:20px 4px 20px;display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569;margin-bottom:4px;">
               <span id="t5-slider-start-lbl" style="min-width:60px;"></span>
               <span style="color:#94a3b8;font-size:10px;">← 拖曳調整顯示範圍 →</span>
               <span id="t5-slider-end-lbl" style="min-width:60px;text-align:right;"></span>
             </div>
-            <div class="dual-slider-wrap" id="t5-slider-inner" style="position:relative;height:var(--slider-h,120px);">
+            <div class="dual-slider-wrap" id="t5-slider-inner" style="position:relative;height:48px;">
               <!-- 背景軌道 -->
               <div style="position:absolute;top:50%;left:0;right:0;height:4px;margin-top:-2px;background:#e2e8f0;border-radius:2px;pointer-events:none;"></div>
               <!-- 選取範圍高亮 -->
@@ -836,12 +875,7 @@
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-2">圖表資料</label>
             <label class="flex items-center gap-2 text-xs mb-1 cursor-pointer"><input type="checkbox" id="s-filter-outliers" class="rounded" checked> 自動過濾異常淨值</label>
-            <div class="flex items-center gap-2 text-xs mt-1">
-              <span class="text-slate-500">拉桿高度</span>
-              <input type="number" id="s-slider-height" min="20" max="200" step="10" value="120"
-                class="w-14 px-1 py-0.5 border border-slate-300 rounded text-right text-xs">
-              <span class="text-slate-500">px</span>
-            </div>
+
             <div class="flex items-center gap-2 text-xs">
               <span class="text-slate-500">異常門檻</span>
               <input type="number" id="s-outlier-threshold" min="5" max="80" step="5" value="30"
@@ -942,10 +976,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.20  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.24  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.20 (整合版)';
+const APP_VERSION = 'V2.24 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1875,8 +1909,6 @@ function openSettings(){
   document.getElementById('s-sticky-nav').checked=state.stickyNav;
   document.getElementById('s-filter-outliers').checked=state.filterOutliers;
   document.getElementById('s-outlier-threshold').value=Math.round(state.outlierThreshold*100);
-  document.getElementById('s-slider-height').value=state.sliderHeight||120;
-  document.documentElement.style.setProperty('--slider-h', (state.sliderHeight||120)+'px');
   const nav=document.getElementById('main-nav-bar');
   if(nav){ if(state.stickyNav){ nav.classList.add('sticky','top-0','z-40'); } else { nav.classList.remove('sticky','top-0','z-40'); } }
   document.getElementById('s-freeze-col').checked=state.freezeNameCol;
@@ -1955,8 +1987,6 @@ document.getElementById('btn-save-settings').onclick=()=>{
   state.stickyNav=document.getElementById('s-sticky-nav').checked;
   state.filterOutliers=document.getElementById('s-filter-outliers').checked;
   state.outlierThreshold=(parseFloat(document.getElementById('s-outlier-threshold').value)||30)/100;
-  state.sliderHeight=parseInt(document.getElementById('s-slider-height').value)||120;
-  document.documentElement.style.setProperty('--slider-h', state.sliderHeight+'px');
   // 重新過濾並重繪
   t3FilterOutliers();
   if(state.t3_loaded) t3Redraw();
@@ -2487,14 +2517,12 @@ function t4Redraw(){
   if(!datasets.length){ t4SetStatus('請為至少一個組別選擇標的'); return; }
   t4SetStatus('');
   t4RenderLegend(datasets);
+  t4InitSlider(allDates);
 
   if(state.t4_chart) state.t4_chart.destroy();
-  let _t4PrevYear = null;
-  const t4XTickCb = (val, idx)=>{
-    const date = allDates[idx]; if(!date) return '';
-    const yr = date.slice(0,4), mo = date.slice(5,7);
-    if(yr !== _t4PrevYear){ _t4PrevYear = yr; return yr+'/'+mo; }
-    return mo;
+  const t4XTickCb = function(val){
+    const date = allDates[val]; if(!date) return '';
+    return date.slice(0,7);  // 一律顯示 YYYY/MM
   };
 
   state.t4_chart = new Chart(document.getElementById('t4-chart'),{
@@ -3289,6 +3317,7 @@ function t3Redraw(){
 
   t3RenderCards(seriesList, totalVals, dates, seriesList.map(sr=>sr.cashDivSnap));
   t3RenderLegend(seriesList);
+  t3InitSlider(dates, firstTxDate);
 
   const FILL_COLORS = ['rgba(24,95,165,0.07)','rgba(29,158,117,0.07)','rgba(216,90,48,0.07)',
     'rgba(155,89,182,0.07)','rgba(186,117,23,0.07)','rgba(153,53,86,0.07)'];
@@ -3322,12 +3351,9 @@ function t3Redraw(){
   }
 
   if(state.t3_chart) state.t3_chart.destroy();
-  let _t3PrevYear = null;
-  const t3XTickCb = (val, idx)=>{
-    const date = dates[idx]; if(!date) return '';
-    const yr = date.slice(0,4), mo = date.slice(5,7);
-    if(yr !== _t3PrevYear){ _t3PrevYear = yr; return yr+'/'+mo; }
-    return mo;
+  const t3XTickCb = function(val){
+    const date = dates[val]; if(!date) return '';
+    return date.slice(0,7);  // 一律顯示 YYYY/MM
   };
 
   state.t3_chart = new Chart(document.getElementById('t3-chart'), {
@@ -4192,7 +4218,7 @@ function t5AdjMarkerSize(delta){
     state.t5_chart.data.datasets.forEach(d=>{
       if(!d.isMarker) return;
       const ms   = state.t5_markerSize;
-      const extra= d.markerType==='oneoff' ? 3 : d.markerType==='dd' ? 2 : 0;
+      const extra= d.markerType==='oneoff' ? 3 : d.markerType==='dd' ? 3 : 0;
       d.pointRadius      = ms + extra;
       d.pointHoverRadius = ms + extra + 3;
     });
@@ -4448,9 +4474,9 @@ function t5Redraw(){
       // 定義：type -> { symbol, color, bgColor, label }
       const ms = state.t5_markerSize;
       const markerDefs = {
-        regular: { pointStyle:'circle',   color:T5_GROUP_COLORS[gi], bg:'#fff',    size:ms,        label:'定期投入' },
-        dd:      { pointStyle:'triangle', color:'#f59e0b',           bg:'#fef3c7', size:ms+2,      label:'跌幅加碼' },
-        oneoff:  { pointStyle:'star',     color:'#7c3aed',           bg:'#ede9fe', size:ms+3,      label:'單次投入' },
+        regular: { pointStyle:'circle',   color:T5_GROUP_COLORS[gi], bg:'#fff',       size:ms,    label:'定期投入' },
+        dd:      { pointStyle:'triangle', color:'#f59e0b',           bg:'#f59e0b',    size:ms+3,  label:'跌幅加碼' },
+        oneoff:  { pointStyle:'star',     color:'#7c3aed',           bg:'#ede9fe',    size:ms+3,  label:'單次投入' },
       };
 
       // 把三種 type 分別建立 scatter dataset
@@ -4496,15 +4522,10 @@ function t5Redraw(){
     !d.isGroup && !d.isMarker && state.t5_visMap[d.label]!==false
   );
 
-  // X 軸 tick callback：月份標籤，年度變動時顯示年份
-  let _t5PrevYear = null;
-  const xTickCb = (val, idx)=>{
-    const date = allDates[idx];
-    if(!date) return '';
-    const yr = date.slice(0,4);
-    const mo = date.slice(5,7);
-    if(yr !== _t5PrevYear){ _t5PrevYear = yr; return `${yr}/${mo}`; }
-    return mo;
+  // X 軸 tick callback：一律顯示 YYYY/MM
+  const xTickCb = function(val){
+    const date = allDates[val]; if(!date) return '';
+    return date.slice(0,7);
   };
 
   if(state.t5_chart) state.t5_chart.destroy();
@@ -4715,6 +4736,108 @@ function t5ToggleVis(label){
 
 // ── 雙端時間範圍拉桿 ─────────────────────────────────────
 // 使用所有可用日期的索引（0..N-1）作為拉桿值，精確對應每個日期
+// ══ Tab3 / Tab4 雙端時間拉桿 ═══════════════════════════════
+let _t3SliderDates = [];
+let _t4SliderDates = [];
+
+// 只在第一次（或 reload）時初始化拉桿，之後 Redraw 不重建
+// firstTxDate：篩選條件下最早的交易日（Tab3 的起始點）
+function t3InitSlider(filteredDates, firstTxDate){
+  // 全部可用日期，但從最早交易日起算
+  const allDates = state.t3_pRows.map(r=>r.date).filter(Boolean);
+  const startDate = firstTxDate || (allDates[0]);
+  const fullDates = allDates.filter(d=>d>=startDate);
+  if(!fullDates.length) return;
+  const fullFirst = fullDates[0], fullLast = fullDates[fullDates.length-1];
+  const alreadyInit = _t3SliderDates.length > 0 &&
+    _t3SliderDates[0] === fullFirst && _t3SliderDates[_t3SliderDates.length-1] === fullLast;
+  if(alreadyInit) return;
+  _t3SliderDates = fullDates;
+  // 初始化時，左端設為 fullFirst，右端設為今天
+  _initDualSlider('t3', fullDates, fullFirst, fullLast);
+}
+function t4InitSlider(filteredDates){
+  const fullDates = state.t3_pRows.map(r=>r.date).filter(Boolean);
+  if(!fullDates.length) return;
+  const fullFirst = fullDates[0], fullLast = fullDates[fullDates.length-1];
+  const alreadyInit = _t4SliderDates.length > 0 &&
+    _t4SliderDates[0] === fullFirst && _t4SliderDates[_t4SliderDates.length-1] === fullLast;
+  if(alreadyInit) return;
+  _t4SliderDates = fullDates;
+  _initDualSlider('t4', fullDates, fullDates[0], fullDates[fullDates.length-1]);
+}
+
+function _initDualSlider(p, dates, curStart, curEnd){
+  if(!dates.length) return;
+  const max = dates.length-1;
+  let si = dates.findIndex(d=>d>=curStart); if(si<0) si=0;
+  let ei = dates.findIndex(d=>d>=curEnd);   if(ei<0) ei=max; else ei=Math.min(ei,max);
+  const rs=document.getElementById(`${p}-slider-start`);
+  const re=document.getElementById(`${p}-slider-end`);
+  const wrap=document.getElementById(`${p}-slider-wrap`);
+  if(!rs||!re||!wrap) return;
+  rs.min=0; rs.max=max; rs.value=si;
+  re.min=0; re.max=max; re.value=ei;
+  wrap.style.display='block';
+  _updateDualSliderUI(p, dates, si, ei);
+}
+
+function _updateDualSliderUI(p, dates, si, ei){
+  const max=dates.length-1; if(max<=0) return;
+  const sd=dates[si], ed=dates[ei];
+  document.getElementById(`${p}-slider-start-lbl`).textContent=sd?sd.slice(0,7):'';
+  document.getElementById(`${p}-slider-end-lbl`).textContent  =ed?ed.slice(0,7):'';
+  const track=document.getElementById(`${p}-slider-track`);
+  if(track){
+    const pS=(si/max)*100, pE=(ei/max)*100;
+    track.style.left=pS+'%'; track.style.width=(pE-pS)+'%';
+  }
+}
+
+function _dualSliderChange(p, which, dates, redrawFn, startId, endId){
+  const rs=document.getElementById(`${p}-slider-start`);
+  const re=document.getElementById(`${p}-slider-end`);
+  if(!rs||!re||!dates.length) return;
+  let si=parseInt(rs.value), ei=parseInt(re.value);
+  const max=dates.length-1;
+  if(which==='start'&&si>ei){ si=ei; rs.value=si; }
+  if(which==='end'  &&ei<si){ ei=si; re.value=ei; }
+  _updateDualSliderUI(p, dates, si, ei);
+  _updateSliderTipText(p, 'start', dates[si], si, max);
+  _updateSliderTipText(p, 'end',   dates[ei], ei, max);
+  document.getElementById(startId).value=dates[si];
+  document.getElementById(endId).value  =dates[ei];
+  clearTimeout(window[`_${p}SliderTimer`]);
+  window[`_${p}SliderTimer`]=setTimeout(()=>redrawFn(), 80);
+}
+
+function _updateSliderTipText(p, which, date, idx, max){
+  const tipEl=document.getElementById(`${p}-tip-${which}`);
+  if(!tipEl||!date) return;
+  tipEl.textContent=date.slice(0,7);
+  const pct=max>0?(idx/max)*100:0;
+  tipEl.style.left=`calc(${pct}% + ${(0.5-pct/100)*14}px)`;
+}
+
+function _showSliderTip(p, which, show, dates){
+  const tipEl=document.getElementById(`${p}-tip-${which}`);
+  if(!tipEl) return;
+  tipEl.style.opacity=show?'1':'0';
+  if(show){
+    const r=document.getElementById(`${p}-slider-${which}`);
+    const max=dates.length-1;
+    if(r) _updateSliderTipText(p, which, dates[parseInt(r.value)], parseInt(r.value), max);
+  }
+}
+
+// Tab3 公開介面
+function t3DualSliderChange(which){ _dualSliderChange('t3',which,_t3SliderDates,t3Redraw,'t3-date-start','t3-date-end'); }
+function t3ShowSliderTip(which,show){ _showSliderTip('t3',which,show,_t3SliderDates); }
+
+// Tab4 公開介面
+function t4DualSliderChange(which){ _dualSliderChange('t4',which,_t4SliderDates,t4Redraw,'t4-date-start','t4-date-end'); }
+function t4ShowSliderTip(which,show){ _showSliderTip('t4',which,show,_t4SliderDates); }
+
 let _t5SliderDates = [];  // 目前可用的完整日期清單（含匯率過濾）
 
 function t5InitYearSlider(allDatesFiltered){
