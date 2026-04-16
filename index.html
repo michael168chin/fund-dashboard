@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.29 (整合版)
+     版本：V2.31 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -492,6 +492,13 @@
                   <button id="t4-vis-funds-g0" onclick="t4GroupToggleFundsVis(0)"
                     style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #e2e8f0;cursor:pointer;background:#f8fafc;color:#185FA5;"
                     title="顯示/隱藏此組所有成份標的曲線">╌ 成份線</button>
+                  <span style="display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;" title="組合線EMA設定">
+                    <input type="checkbox" id="t4-grp-ema-chk-g0" style="width:11px;height:11px;accent-color:#f59e0b;cursor:pointer;" onchange="t4SetGroupEma(0,this.checked)" onclick="event.stopPropagation();">
+                    <span style="font-size:9px;color:#92400e;font-weight:700;">組合EMA</span>
+                    <input type="number" id="t4-grp-ema-per-g0" min="2" max="500" step="1" value="55" placeholder="55"
+                      style="width:30px;font-size:9px;padding:1px 2px;border:1px solid #fde68a;border-radius:3px;text-align:right;background:#fffbeb;"
+                      title="組合EMA天數" onclick="event.stopPropagation();" oninput="t4SetGroupEmaPeriod(0,this.value)">
+                  </span>
                 </div>
               </div>
               <!-- B 組 -->
@@ -529,6 +536,13 @@
                   <button id="t4-vis-funds-g1" onclick="t4GroupToggleFundsVis(1)"
                     style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #e2e8f0;cursor:pointer;background:#f8fafc;color:#D85A30;"
                     title="顯示/隱藏此組所有成份標的曲線">╌ 成份線</button>
+                  <span style="display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;" title="組合線EMA設定">
+                    <input type="checkbox" id="t4-grp-ema-chk-g1" style="width:11px;height:11px;accent-color:#f59e0b;cursor:pointer;" onchange="t4SetGroupEma(1,this.checked)" onclick="event.stopPropagation();">
+                    <span style="font-size:9px;color:#92400e;font-weight:700;">組合EMA</span>
+                    <input type="number" id="t4-grp-ema-per-g1" min="2" max="500" step="1" value="55" placeholder="55"
+                      style="width:30px;font-size:9px;padding:1px 2px;border:1px solid #fde68a;border-radius:3px;text-align:right;background:#fffbeb;"
+                      title="組合EMA天數" onclick="event.stopPropagation();" oninput="t4SetGroupEmaPeriod(1,this.value)">
+                  </span>
                 </div>
               </div>
               <!-- C 組 -->
@@ -566,6 +580,13 @@
                   <button id="t4-vis-funds-g2" onclick="t4GroupToggleFundsVis(2)"
                     style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #e2e8f0;cursor:pointer;background:#f8fafc;color:#1D9E75;"
                     title="顯示/隱藏此組所有成份標的曲線">╌ 成份線</button>
+                  <span style="display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;" title="組合線EMA設定">
+                    <input type="checkbox" id="t4-grp-ema-chk-g2" style="width:11px;height:11px;accent-color:#f59e0b;cursor:pointer;" onchange="t4SetGroupEma(2,this.checked)" onclick="event.stopPropagation();">
+                    <span style="font-size:9px;color:#92400e;font-weight:700;">組合EMA</span>
+                    <input type="number" id="t4-grp-ema-per-g2" min="2" max="500" step="1" value="55" placeholder="55"
+                      style="width:30px;font-size:9px;padding:1px 2px;border:1px solid #fde68a;border-radius:3px;text-align:right;background:#fffbeb;"
+                      title="組合EMA天數" onclick="event.stopPropagation();" oninput="t4SetGroupEmaPeriod(2,this.value)">
+                  </span>
                 </div>
               </div>
               <!-- D 組 -->
@@ -603,6 +624,13 @@
                   <button id="t4-vis-funds-g3" onclick="t4GroupToggleFundsVis(3)"
                     style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #e2e8f0;cursor:pointer;background:#f8fafc;color:#9B59B6;"
                     title="顯示/隱藏此組所有成份標的曲線">╌ 成份線</button>
+                  <span style="display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;" title="組合線EMA設定">
+                    <input type="checkbox" id="t4-grp-ema-chk-g3" style="width:11px;height:11px;accent-color:#f59e0b;cursor:pointer;" onchange="t4SetGroupEma(3,this.checked)" onclick="event.stopPropagation();">
+                    <span style="font-size:9px;color:#92400e;font-weight:700;">組合EMA</span>
+                    <input type="number" id="t4-grp-ema-per-g3" min="2" max="500" step="1" value="55" placeholder="55"
+                      style="width:30px;font-size:9px;padding:1px 2px;border:1px solid #fde68a;border-radius:3px;text-align:right;background:#fffbeb;"
+                      title="組合EMA天數" onclick="event.stopPropagation();" oninput="t4SetGroupEmaPeriod(3,this.value)">
+                  </span>
                 </div>
               </div>
             </div>
@@ -994,10 +1022,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.29  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.31  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.29 (整合版)';
+const APP_VERSION = 'V2.31 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1123,7 +1151,7 @@ let state = {
   t4VisMap: {},  // key=dataset label, value=true(顯示)/false(隱藏)
   t4_comboWidth: 1.8,   // 組合線寬
   t4_divRows: [],       // 基金配息區資料
-  t4_emaMap:  {},          // EMA 設定 { fundCode: { show:bool, period:int } }
+  t4_emaMap:  {},          // EMA 設定（標的 & 組合）{ key: { show:bool, period:int } }
   t4ViewMode: [0,0,0,0], // Tab4 各組下拉篩選模式：0=全部 1=已選 2=未選
   t5ViewMode: [0,0,0,0], // Tab5 各組下拉篩選模式
   filterOutliers: true,   // 過濾異常淨值（單日對前後兩日漲跌幅均>30%）
@@ -2139,28 +2167,30 @@ function t4GroupMsRenderList(gi, filter=''){
   else if(mode===2) items = items.filter(v=>!g.selected.has(v));
   if(!items.length){ list.innerHTML='<div class="ms-empty">無符合項目</div>'; return; }
   list.innerHTML = items.map(v=>{
-    const label = t3FundLabel(v,'t4');
-    const w   = g.weights[v] !== undefined ? g.weights[v] : '';
-    const ema = state.t4_emaMap[v] || { show:false, period:55 };
-    const sv  = v.replace(/'/g,String.fromCharCode(92)+"'");
+  list.innerHTML = items.map(v=>{
+    const label  = t3FundLabel(v,'t4');
+    const w      = g.weights[v] !== undefined ? g.weights[v] : '';
+    const emaKey = gi+':'+v;
+    const ema    = state.t4_emaMap[emaKey] || { show:false, period:55 };
+    const sv     = v.replace(/'/g,String.fromCharCode(92)+"'");
     return '<div class="ms-item" style="gap:3px;" onclick="t4GroupToggleItem('+gi+',\''+sv+'\')">'
       + '<input type="checkbox" '+(g.selected.has(v)?'checked':'')
-      + ' onclick="event.stopPropagation();t4GroupToggleItem('+gi+',\''+sv+'\')"> '
-      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;font-size:11px;">'+label+'</span>'
+      + ' onclick="event.stopPropagation();t4GroupToggleItem('+gi+',\''+sv+'\')">'
+      + ' <span style="flex:1;overflow:hidden;text-overflow:ellipsis;font-size:11px;">'+label+'</span>'
       + '<input type="number" min="0" max="100" step="0.1" placeholder="%" value="'+w+'"'
       + ' style="width:46px;font-size:11px;padding:1px 4px;border:1px solid #e2e8f0;border-radius:4px;text-align:right;"'
       + ' onclick="event.stopPropagation();"'
       + ' oninput="t4GroupSetWeight('+gi+',\''+sv+'\',this.value)">'
       + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="顯示EMA">'
       + '<input type="checkbox" '+(ema.show?'checked':'')
-      + ' onchange="t4SetEma(\''+sv+'\',this.checked)" onclick="event.stopPropagation();"'
+      + ' onchange="t4SetEma('+gi+',\''+sv+'\',this.checked)" onclick="event.stopPropagation();"'
       + ' style="width:11px;height:11px;accent-color:#f59e0b;cursor:pointer;">'
       + '<span style="font-size:9px;color:#92400e;font-weight:700;">EMA</span></label>'
       + '<input type="number" min="2" max="500" step="1" value="'+(ema.period||55)+'"'
       + ' placeholder="55"'
-      + ' style="width:34px;font-size:11px;padding:1px 3px;border:1px solid #fde68a;border-radius:4px;text-align:right;background:#fffbeb;"'
+      + ' style="width:38px;height:18px;font-size:9px;padding:0 3px;border:1px solid #fde68a;border-radius:4px;text-align:right;background:#fffbeb;box-sizing:border-box;"'
       + ' title="EMA天數" onclick="event.stopPropagation();"'
-      + ' oninput="t4SetEmaPeriod(\''+sv+'\',this.value)">'
+      + ' oninput="t4SetEmaPeriod('+gi+',\''+sv+'\',this.value)">'
       + '</div>';
   }).join('');
 }
@@ -2212,16 +2242,32 @@ function t4GroupSelectAll(gi, val){
 }
 
 // ══ EMA（指數移動平均線）════════════════════════════════
-function t4SetEma(fund, show){
-  if(!state.t4_emaMap[fund]) state.t4_emaMap[fund] = { show:false, period:55 };
-  state.t4_emaMap[fund].show = show;
+function t4SetGroupEma(gi, show){
+  const key = `${T4_GROUP_NAMES[gi]} 組合_EMA`;
+  if(!state.t4_emaMap[key]) state.t4_emaMap[key] = { show:false, period:55 };
+  state.t4_emaMap[key].show = show;
   if(state.t4_loaded) t4Redraw();
 }
-function t4SetEmaPeriod(fund, val){
+function t4SetGroupEmaPeriod(gi, val){
+  const key = `${T4_GROUP_NAMES[gi]} 組合_EMA`;
   const p = parseInt(val) || 55;
-  if(!state.t4_emaMap[fund]) state.t4_emaMap[fund] = { show:false, period:55 };
-  state.t4_emaMap[fund].period = p;
-  if(state.t4_loaded && state.t4_emaMap[fund].show) t4Redraw();
+  if(!state.t4_emaMap[key]) state.t4_emaMap[key] = { show:false, period:55 };
+  state.t4_emaMap[key].period = p;
+  if(state.t4_loaded && state.t4_emaMap[key].show) t4Redraw();
+}
+
+function t4SetEma(gi, fund, show){
+  const key = gi+':'+fund;
+  if(!state.t4_emaMap[key]) state.t4_emaMap[key] = { show:false, period:55 };
+  state.t4_emaMap[key].show = show;
+  if(state.t4_loaded) t4Redraw();
+}
+function t4SetEmaPeriod(gi, fund, val){
+  const key = gi+':'+fund;
+  const p = parseInt(val) || 55;
+  if(!state.t4_emaMap[key]) state.t4_emaMap[key] = { show:false, period:55 };
+  state.t4_emaMap[key].period = p;
+  if(state.t4_loaded && state.t4_emaMap[key].show) t4Redraw();
 }
 
 // 計算 EMA 序列（k=2/(n+1)）
@@ -2624,17 +2670,12 @@ function t4Redraw(){
 
     // ── EMA 曲線（在組合線之前加入）──
     sel.forEach(fund=>{
-      const emaConf = state.t4_emaMap[fund];
+      const emaKey  = gi+':'+fund;
+      const emaConf = state.t4_emaMap[emaKey];
       if(!emaConf || !emaConf.show) return;
       const period = emaConf.period || 55;
-      const isUSD  = fund.toUpperCase().startsWith('USD');
-      const rawSeries = allDates.map(date=>{
-        const row = state.t3_pRows.find(r=>r.date===date);
-        if(!row||row[fund]===undefined) return null;
-        let val = row[fund];
-        if(useFX&&isUSD) val *= t3GetFX(date);
-        return val;
-      });
+      // 使用 t4CalcDivAdjustedSeries，納入配息再投資影響
+      const rawSeries = t4CalcDivAdjustedSeries(fund, allDates);
       const baseIdx = rawSeries.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx<0) return;
       const base = rawSeries[baseIdx];
@@ -2642,7 +2683,7 @@ function t4Redraw(){
         i<baseIdx?null:(v===null?null:parseFloat(((v/base)*100).toFixed(4)))
       );
       const emaSeries = calcEMA(idxSeries, period);
-      const emaLabel  = `${T4_GROUP_NAMES[gi]}EMA${period}:${fund}`;
+      const emaLabel  = `${T4_GROUP_NAMES[gi]}：EMA${period}(${t3FundLabel(fund,'t4')})`;
       datasets.push({
         label: emaLabel, data: emaSeries, spanGaps: true,
         borderColor: T4_GROUP_COLORS[gi],
@@ -2677,6 +2718,26 @@ function t4Redraw(){
           groupIdx: gi, isGroup: true,
           hidden: state.t4VisMap[groupLabel] === false,
         });
+
+        // ── 組合線 EMA ──
+        const grpEmaKey  = `${groupLabel}_EMA`;
+        const grpEmaConf = state.t4_emaMap[grpEmaKey] || { show:false, period:55 };
+        if(grpEmaConf.show){
+          const grpEmaPeriod = grpEmaConf.period || 55;
+          const grpEmaSeries = calcEMA(groupData, grpEmaPeriod);
+          const grpEmaLabel  = `${T4_GROUP_NAMES[gi]} EMA${grpEmaPeriod}(組合)`;
+          datasets.push({
+            label: grpEmaLabel, data: grpEmaSeries, spanGaps: true,
+            borderColor: T4_GROUP_COLORS[gi],
+            backgroundColor: 'transparent',
+            borderWidth: 1.8, borderDash: [4,2],
+            pointRadius: 0, pointHoverRadius: 0,
+            fill: false, tension: 0.2,
+            groupIdx: gi, isGroup: false, isEma: true, isGroupEma: true,
+            emaKey: grpEmaKey,
+            hidden: state.t4VisMap[grpEmaLabel] === false,
+          });
+        }
       }
     }
   });
