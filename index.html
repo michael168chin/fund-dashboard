@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.25 (整合版)
+     版本：V2.26 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -976,10 +976,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.25  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.26  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.25 (整合版)';
+const APP_VERSION = 'V2.26 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1068,6 +1068,8 @@ let state = {
   tableFontSize: 14,
   yieldDecimalPlaces: 5,
   freezeHeader: true,
+  sortPlan:    { key: null, dir: 'desc' },   // Tab1 排序
+  sortDetails: { key: null, dir: 'desc' },   // Tab2 排序
   stickyNav: false,  // 導覽列固定在頂端（預設不固定）
   freezeNameCol: true,
   colVisPlan:    {},
@@ -1553,6 +1555,17 @@ function calcFunds(){
 }
 
 // ─── RENDER TABLES ────────────────────────────────────────
+function tableSort(tab, key){
+  const sort = tab==='plan' ? state.sortPlan : state.sortDetails;
+  if(sort.key === key){
+    sort.dir = sort.dir==='desc' ? 'asc' : 'desc';
+  } else {
+    sort.key = key;
+    sort.dir = 'desc';
+  }
+  renderTables();
+}
+
 function renderTables(){
   const data = calcFunds();
   renderPlanTab(data);
@@ -1561,10 +1574,25 @@ function renderTables(){
   if(typeof updateToggleBtn === 'function') updateToggleBtn();
 }
 
+function sortRows(rows, sort){
+  if(!sort.key) return rows;
+  const k = sort.key;
+  const sign = sort.dir === 'desc' ? -1 : 1;
+  return [...rows].sort((a,b)=>{
+    // 第一欄「名稱」以 code 排序
+    const ak = k==='name' ? (a.code||'') : a[k];
+    const bk = k==='name' ? (b.code||'') : b[k];
+    if(ak===undefined||ak===null) return 1;
+    if(bk===undefined||bk===null) return -1;
+    if(typeof ak==='number'&&typeof bk==='number') return sign*(ak-bk);
+    return sign*String(ak).localeCompare(String(bk));
+  });
+}
+
 function renderPlanTab(data){
   renderCards('plan', data.planSummary);
   const cols = [PLAN_COLS[0], ...state.colOrderPlan.map(k=>PLAN_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisPlan[c.key]!==false);
-  const rows = data.funds.filter(f=>f.isVisible);
+  const rows = sortRows(data.funds.filter(f=>f.isVisible), state.sortPlan);
   const tbl = document.getElementById('table-plan');
   tbl.innerHTML = renderTableHTML(cols, rows, data.planSummary, 'plan');
   attachResizeHandlers(tbl,'plan');
@@ -1573,7 +1601,7 @@ function renderPlanTab(data){
 function renderDetailsTab(data){
   renderCards('details', data.detailsSummary);
   const cols = [DETAILS_COLS[0], ...state.colOrderDetails.map(k=>DETAILS_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisDetails[c.key]!==false);
-  const rows = data.funds.filter(f=>f.isVisible);
+  const rows = sortRows(data.funds.filter(f=>f.isVisible), state.sortDetails);
   const tbl = document.getElementById('table-details');
   tbl.innerHTML = renderTableHTML(cols, rows, data.detailsSummary, 'details');
   attachResizeHandlers(tbl,'details');
@@ -1723,10 +1751,14 @@ function renderTableHTML(cols, rows, summary, tab){
     }
     const borderBottom = frz ? 'border-bottom:2px solid #e2e8f0;' : '';
     const shadowLeft   = (ci===0 && frzCol) ? 'box-shadow:2px 0 5px -2px rgba(0,0,0,0.1);' : '';
+    const sort  = tab==='plan' ? state.sortPlan : state.sortDetails;
+    const isSort = sort.key === c.key;
+    const arrow  = isSort ? (sort.dir==='desc' ? ' ↓' : ' ↑') : '';
     return `<th class="resizable px-4 py-2.5 font-medium text-${c.align} bg-slate-50 ${bgRaw}"
-      style="width:${w}px;min-width:${w}px;font-size:${fs}px;${stickyStyle}${borderBottom}${shadowLeft}"
-      data-key="${c.key}" data-tab="${tab}">
-      <span class="leading-tight break-words whitespace-normal select-none">${c.label}</span>
+      style="width:${w}px;min-width:${w}px;font-size:${fs}px;${stickyStyle}${borderBottom}${shadowLeft}cursor:pointer;user-select:none;"
+      data-key="${c.key}" data-tab="${tab}"
+      ondblclick="tableSort('${tab}','${c.key}')">
+      <span class="leading-tight break-words whitespace-normal select-none">${c.label}<span style="color:#3b82f6;">${arrow}</span></span>
       <div class="resize-handle"></div>
     </th>`;
   });
