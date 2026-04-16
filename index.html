@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.26 (整合版)
+     版本：V2.29 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -114,6 +114,9 @@
   .ms-act-btn{font-size:11px;padding:2px 8px;border-radius:4px;border:none;cursor:pointer;}
   .ms-act-all{background:#eff6ff;color:#1d4ed8;} .ms-act-all:hover{background:#dbeafe;}
   .ms-act-none{background:#f1f5f9;color:#475569;} .ms-act-none:hover{background:#e2e8f0;}
+  .ms-act-view{background:#f0fdf4;color:#166534;} .ms-act-view:hover{background:#dcfce7;}
+  .ms-act-view.active-sel{background:#dcfce7;color:#14532d;font-weight:600;}
+  .ms-act-view.active-unsel{background:#fef3c7;color:#92400e;font-weight:600;}
   .ms-list{max-height:200px;overflow-y:auto;padding:4px 0;}
   .ms-item{display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:12px;cursor:pointer;}
   .ms-item:hover{background:#f8fafc;}
@@ -379,6 +382,9 @@
                 <button class="qbtn" onclick="t3SetQuick(90)">近90天</button>
                 <button class="qbtn" onclick="t3SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t3SetQuick(365)">近1年</button>
+                <button class="qbtn" onclick="t3SetQuick(365*2)">近2年</button>
+                <button class="qbtn" onclick="t3SetQuick(365*3)">近3年</button>
+                <button class="qbtn" onclick="t3SetQuick(365*5)">近5年</button>
                 <button class="qbtn" onclick="t3SetQuickFull()">全部</button>
               </div>
             </div>
@@ -473,6 +479,7 @@
                     <div class="ms-actions">
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(0,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(0,false)">全不選</button>
+                      <button id="t4-view-btn-g0" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(0)">看已選</button>
                     </div>
                     <div class="ms-list" id="ms-list-g0"></div>
                   </div>
@@ -509,6 +516,7 @@
                     <div class="ms-actions">
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(1,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(1,false)">全不選</button>
+                      <button id="t4-view-btn-g1" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(1)">看已選</button>
                     </div>
                     <div class="ms-list" id="ms-list-g1"></div>
                   </div>
@@ -545,6 +553,7 @@
                     <div class="ms-actions">
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(2,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(2,false)">全不選</button>
+                      <button id="t4-view-btn-g2" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(2)">看已選</button>
                     </div>
                     <div class="ms-list" id="ms-list-g2"></div>
                   </div>
@@ -581,6 +590,7 @@
                     <div class="ms-actions">
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(3,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(3,false)">全不選</button>
+                      <button id="t4-view-btn-g3" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(3)">看已選</button>
                     </div>
                     <div class="ms-list" id="ms-list-g3"></div>
                   </div>
@@ -613,9 +623,13 @@
               <div class="text-xs text-slate-500 mb-1">快速選擇</div>
               <div class="flex gap-1 flex-wrap">
                 <button class="qbtn" onclick="t4SetQuick(30)">近30天</button>
+                <button class="qbtn" onclick="t4SetQuick(60)">近60天</button>
                 <button class="qbtn" onclick="t4SetQuick(90)">近90天</button>
                 <button class="qbtn" onclick="t4SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t4SetQuick(365)">近1年</button>
+                <button class="qbtn" onclick="t4SetQuick(365*2)">近2年</button>
+                <button class="qbtn" onclick="t4SetQuick(365*3)">近3年</button>
+                <button class="qbtn" onclick="t4SetQuick(365*5)">近5年</button>
                 <button class="qbtn" onclick="t4SetQuickFull()">全部</button>
               </div>
             </div>
@@ -723,7 +737,11 @@
             <div>
               <div class="text-xs text-slate-500 mb-1">快速選擇</div>
               <div class="flex gap-1 flex-wrap">
+                <button class="qbtn" onclick="t5SetQuick(30)">近30天</button>
+                <button class="qbtn" onclick="t5SetQuick(90)">近90天</button>
+                <button class="qbtn" onclick="t5SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t5SetQuick(365)">近1年</button>
+                <button class="qbtn" onclick="t5SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*5)">近5年</button>
                 <button class="qbtn" onclick="t5SetQuickFull()">全部</button>
@@ -976,10 +994,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.26  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.29  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.26 (整合版)';
+const APP_VERSION = 'V2.29 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1105,6 +1123,9 @@ let state = {
   t4VisMap: {},  // key=dataset label, value=true(顯示)/false(隱藏)
   t4_comboWidth: 1.8,   // 組合線寬
   t4_divRows: [],       // 基金配息區資料
+  t4_emaMap:  {},          // EMA 設定 { fundCode: { show:bool, period:int } }
+  t4ViewMode: [0,0,0,0], // Tab4 各組下拉篩選模式：0=全部 1=已選 2=未選
+  t5ViewMode: [0,0,0,0], // Tab5 各組下拉篩選模式
   filterOutliers: true,   // 過濾異常淨值（單日對前後兩日漲跌幅均>30%）
   sliderHeight: 120,      // 雙端拉桿高度（px），越高越容易按
   outlierThreshold: 0.30, // 異常門檻（預設30%）
@@ -2079,28 +2100,68 @@ const t4Groups = Array.from({length:T4_GROUP_COUNT}, ()=>({
   all:[], selected:new Set(), weights:{}, paused:false, pausedSnapshot:null
 }));
 
+// ── 看已選 / 看未選 / 取消 循環切換 ────────────────────────
+function _cycleViewMode(prefix, gi, viewModeArr, renderFn){
+  const cur = viewModeArr[gi] || 0;
+  const next = (cur + 1) % 3;  // 0→1→2→0
+  viewModeArr[gi] = next;
+  const btnId = `${prefix}-view-btn-g${gi}`;
+  const btn   = document.getElementById(btnId);
+  if(btn){
+    const labels = ['看已選', '看未選', '全部'];
+    btn.textContent = labels[next];
+    btn.className   = 'ms-act-btn ms-act-view' +
+      (next===1 ? ' active-sel' : next===2 ? ' active-unsel' : '');
+  }
+  renderFn(gi);
+}
+
+function t4GroupCycleView(gi){
+  _cycleViewMode('t4', gi, state.t4ViewMode, t4GroupMsRenderList);
+}
+function t5GroupCycleView(gi){
+  _cycleViewMode('t5', gi, state.t5ViewMode,
+    (g)=>t5GroupMsRenderList(g, document.getElementById(`t5-ms-search-g${g}`)?.value||''));
+}
+
 function t4GroupMsRenderList(gi, filter=''){
   const g    = t4Groups[gi];
   const list = document.getElementById(`ms-list-g${gi}`);
-  const items = filter ? g.all.filter(v=>{
+  const mode = state.t4ViewMode[gi] || 0;
+  // 先依文字搜尋，再依 viewMode 過濾
+  let items = filter ? g.all.filter(v=>{
     const q=filter.toLowerCase();
     if(v.toLowerCase().includes(q)) return true;
     const name=(state.fundNameMap[v]||'').toLowerCase();
     return name.includes(q);
   }) : g.all;
+  if(mode===1) items = items.filter(v=>g.selected.has(v));
+  else if(mode===2) items = items.filter(v=>!g.selected.has(v));
   if(!items.length){ list.innerHTML='<div class="ms-empty">無符合項目</div>'; return; }
   list.innerHTML = items.map(v=>{
     const label = t3FundLabel(v,'t4');
-    const w = g.weights[v] !== undefined ? g.weights[v] : '';
-    return `<div class="ms-item" style="gap:4px;" onclick="t4GroupToggleItem(${gi},'${v.replace(/'/g,"\\'")}')">
-      <input type="checkbox" ${g.selected.has(v)?'checked':''}
-        onclick="event.stopPropagation();t4GroupToggleItem(${gi},'${v.replace(/'/g,"\\'")}')">
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${label}</span>
-      <input type="number" min="0" max="100" step="0.1" placeholder="%" value="${w}"
-        style="width:52px;font-size:11px;padding:1px 4px;border:1px solid #e2e8f0;border-radius:4px;text-align:right;"
-        onclick="event.stopPropagation();"
-        oninput="t4GroupSetWeight(${gi},'${v.replace(/'/g,"\\'")}',this.value)">
-    </div>`;
+    const w   = g.weights[v] !== undefined ? g.weights[v] : '';
+    const ema = state.t4_emaMap[v] || { show:false, period:55 };
+    const sv  = v.replace(/'/g,String.fromCharCode(92)+"'");
+    return '<div class="ms-item" style="gap:3px;" onclick="t4GroupToggleItem('+gi+',\''+sv+'\')">'
+      + '<input type="checkbox" '+(g.selected.has(v)?'checked':'')
+      + ' onclick="event.stopPropagation();t4GroupToggleItem('+gi+',\''+sv+'\')"> '
+      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;font-size:11px;">'+label+'</span>'
+      + '<input type="number" min="0" max="100" step="0.1" placeholder="%" value="'+w+'"'
+      + ' style="width:46px;font-size:11px;padding:1px 4px;border:1px solid #e2e8f0;border-radius:4px;text-align:right;"'
+      + ' onclick="event.stopPropagation();"'
+      + ' oninput="t4GroupSetWeight('+gi+',\''+sv+'\',this.value)">'
+      + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="顯示EMA">'
+      + '<input type="checkbox" '+(ema.show?'checked':'')
+      + ' onchange="t4SetEma(\''+sv+'\',this.checked)" onclick="event.stopPropagation();"'
+      + ' style="width:11px;height:11px;accent-color:#f59e0b;cursor:pointer;">'
+      + '<span style="font-size:9px;color:#92400e;font-weight:700;">EMA</span></label>'
+      + '<input type="number" min="2" max="500" step="1" value="'+(ema.period||55)+'"'
+      + ' placeholder="55"'
+      + ' style="width:34px;font-size:11px;padding:1px 3px;border:1px solid #fde68a;border-radius:4px;text-align:right;background:#fffbeb;"'
+      + ' title="EMA天數" onclick="event.stopPropagation();"'
+      + ' oninput="t4SetEmaPeriod(\''+sv+'\',this.value)">'
+      + '</div>';
   }).join('');
 }
 
@@ -2148,6 +2209,40 @@ function t4GroupSelectAll(gi, val){
   t4GroupMsRenderList(gi, q);
   t4GroupUpdateLabel(gi);
   t4Redraw();
+}
+
+// ══ EMA（指數移動平均線）════════════════════════════════
+function t4SetEma(fund, show){
+  if(!state.t4_emaMap[fund]) state.t4_emaMap[fund] = { show:false, period:55 };
+  state.t4_emaMap[fund].show = show;
+  if(state.t4_loaded) t4Redraw();
+}
+function t4SetEmaPeriod(fund, val){
+  const p = parseInt(val) || 55;
+  if(!state.t4_emaMap[fund]) state.t4_emaMap[fund] = { show:false, period:55 };
+  state.t4_emaMap[fund].period = p;
+  if(state.t4_loaded && state.t4_emaMap[fund].show) t4Redraw();
+}
+
+// 計算 EMA 序列（k=2/(n+1)）
+function calcEMA(series, period){
+  const k = 2 / (period + 1);
+  const result = new Array(series.length).fill(null);
+  // 找第一個有效值
+  let firstIdx = -1;
+  for(let i=0; i<series.length; i++){
+    if(series[i]!==null && series[i]!==undefined){ firstIdx=i; break; }
+  }
+  if(firstIdx < 0) return result;
+  // 以第一個有效值為起始 EMA
+  let ema = series[firstIdx];
+  result[firstIdx] = parseFloat(ema.toFixed(4));
+  for(let i=firstIdx+1; i<series.length; i++){
+    if(series[i]===null||series[i]===undefined){ result[i]=null; continue; }
+    ema = series[i] * k + ema * (1 - k);
+    result[i] = parseFloat(ema.toFixed(4));
+  }
+  return result;
 }
 
 function t4GroupSetWeight(gi, fund, val){
@@ -2527,6 +2622,39 @@ function t4Redraw(){
       });
     });
 
+    // ── EMA 曲線（在組合線之前加入）──
+    sel.forEach(fund=>{
+      const emaConf = state.t4_emaMap[fund];
+      if(!emaConf || !emaConf.show) return;
+      const period = emaConf.period || 55;
+      const isUSD  = fund.toUpperCase().startsWith('USD');
+      const rawSeries = allDates.map(date=>{
+        const row = state.t3_pRows.find(r=>r.date===date);
+        if(!row||row[fund]===undefined) return null;
+        let val = row[fund];
+        if(useFX&&isUSD) val *= t3GetFX(date);
+        return val;
+      });
+      const baseIdx = rawSeries.findIndex(v=>v!==null&&v!==undefined);
+      if(baseIdx<0) return;
+      const base = rawSeries[baseIdx];
+      const idxSeries = rawSeries.map((v,i)=>
+        i<baseIdx?null:(v===null?null:parseFloat(((v/base)*100).toFixed(4)))
+      );
+      const emaSeries = calcEMA(idxSeries, period);
+      const emaLabel  = `${T4_GROUP_NAMES[gi]}EMA${period}:${fund}`;
+      datasets.push({
+        label: emaLabel, data: emaSeries, spanGaps: true,
+        borderColor: T4_GROUP_COLORS[gi],
+        backgroundColor: 'transparent',
+        borderWidth: 1.8, borderDash: [4,2],
+        pointRadius: 0, pointHoverRadius: 0,
+        fill: false, tension: 0.2,
+        groupIdx: gi, fundKey: fund, isEma: true,
+        hidden: state.t4VisMap[emaLabel] === false,
+      });
+    });
+
     // 組合加權曲線（粗實線，無端點標記）
     const totW = sel.reduce((s,v)=>s+(parseFloat(g.weights[v])||0), 0);
     if(sel.length > 1 || totW > 0){
@@ -2601,16 +2729,23 @@ function t4ShowTip(ctx, dates, datasets){
     html += `<div style="font-size:11px;font-weight:600;color:${T4_GROUP_COLORS[gi]};margin:5px 0 3px;">${T4_GROUP_NAMES[gi]} 組</div>`;
     textLines.push(`▸ ${T4_GROUP_NAMES[gi]} 組`);
     grpDs.forEach(ds=>{
+      if(ds.isEma) return;  // EMA 線不顯示在 tooltip
       const val = ds.data[idx];
       if(val===null||val===undefined) return;
       const diff   = val - 100;
       const diffStr= (diff>=0?'+':'')+diff.toFixed(2)+'%';
       const col    = diff>=0?'#1D9E75':'#c0392b';
       const bold   = ds.isGroup ? 'font-weight:600;' : '';
+      // 配置比例
+      let weightStr = '';
+      if(!ds.isGroup && ds.fundKey){
+        const w = parseFloat(t4Groups[gi].weights[ds.fundKey]) || 0;
+        if(w > 0) weightStr = `<span style="font-size:10px;color:#94a3b8;margin-right:2px;">${w.toFixed(1)}%</span>`;
+      }
       html += `<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
         <span style="width:${ds.isGroup?20:12}px;height:3px;border-radius:2px;background:${T4_GROUP_COLORS[gi]};
           ${ds.borderDash&&ds.borderDash.length?'border-top:2px dashed '+T4_GROUP_COLORS[gi]+';background:transparent;':''}display:inline-block;flex-shrink:0;"></span>
-        <span style="font-size:11px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;${bold}">${ds.label}</span>
+        ${weightStr}<span style="font-size:11px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;${bold}">${ds.label}</span>
         <span style="font-size:12px;${bold}color:${col};white-space:nowrap;">${diffStr}</span>
       </div>`;
       textLines.push(`  ${ds.label}: ${diffStr}`);
@@ -3833,6 +3968,7 @@ function t5BuildGroupsUI(){
           <div class="ms-actions">
             <button class="ms-act-btn ms-act-all" onclick="t5GroupSelectAll(${gi},true)">全選</button>
             <button class="ms-act-btn ms-act-none" onclick="t5GroupSelectAll(${gi},false)">全不選</button>
+            <button id="t5-view-btn-g${gi}" class="ms-act-btn ms-act-view" onclick="t5GroupCycleView(${gi})">看已選</button>
           </div>
           <div class="ms-list" id="t5-ms-list-g${gi}"></div>
         </div>
@@ -3867,11 +4003,14 @@ function t5GroupMsRenderList(gi, filter=''){
   const g    = t5Groups[gi];
   const list = document.getElementById(`t5-ms-list-g${gi}`);
   if(!list) return;
-  const items = filter ? g.all.filter(v=>{
+  const mode = state.t5ViewMode[gi] || 0;
+  let items = filter ? g.all.filter(v=>{
     const q=filter.toLowerCase();
     if(v.toLowerCase().includes(q)) return true;
     return (state.fundNameMap[v]||'').toLowerCase().includes(q);
   }) : g.all;
+  if(mode===1) items = items.filter(v=>g.selected.has(v));
+  else if(mode===2) items = items.filter(v=>!g.selected.has(v));
   if(!items.length){ list.innerHTML='<div class="ms-empty">無符合項目</div>'; return; }
   list.innerHTML = items.map(v=>{
     const label = state.t5_showFundName ? t3FundLabel(v,'t5') : v;
