@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.31 (整合版)
+     版本：V2.32 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1022,10 +1022,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.31  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.32  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.31 (整合版)';
+const APP_VERSION = 'V2.32 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -2384,8 +2384,12 @@ function t4SetQuick(days){
   document.getElementById('t4-date-start').value=fmt(start);
   document.getElementById('t4-date-end').value=fmt(end);
   t4Redraw();
+  _syncSliderToDateInput('t4', _t4SliderDates);
 }
-function t4SetQuickFull(){ t4ResetDateRange(); t4Redraw(); }
+function t4SetQuickFull(){
+  t4ResetDateRange(); t4Redraw();
+  _syncSliderToDateInput('t4', _t4SliderDates);
+}
 
 function t4ToggleLock(){
   state.t4_dateLocked = !state.t4_dateLocked;
@@ -3481,8 +3485,12 @@ function t3SetQuick(days){
   document.getElementById('t3-date-start').value=fmt(start);
   document.getElementById('t3-date-end').value=fmt(end);
   t3Redraw();
+  _syncSliderToDateInput('t3', _t3SliderDates);
 }
-function t3SetQuickFull(){ t3ResetDateRange(); t3Redraw(); }
+function t3SetQuickFull(){
+  t3ResetDateRange(); t3Redraw();
+  _syncSliderToDateInput('t3', _t3SliderDates);
+}
 
 // 計算單一 tx 清單的每日累計持倉與總值
 // 判斷是否為現金配息標的
@@ -4980,6 +4988,21 @@ let _t4SliderDates = [];
 
 // 只在第一次（或 reload）時初始化拉桿，之後 Redraw 不重建
 // firstTxDate：篩選條件下最早的交易日（Tab3 的起始點）
+// 讀取 date input 的值，更新拉桿端點位置（不重建拉桿範圍）
+function _syncSliderToDateInput(prefix, dates){
+  if(!dates || !dates.length) return;
+  const startVal = document.getElementById(`${prefix}-date-start`)?.value || dates[0];
+  const endVal   = document.getElementById(`${prefix}-date-end`)?.value   || dates[dates.length-1];
+  const max = dates.length - 1;
+  let si = dates.findIndex(d=>d>=startVal); if(si<0) si=0;
+  let ei = dates.findIndex(d=>d>=endVal);   if(ei<0) ei=max; else ei=Math.min(ei, max);
+  const rs = document.getElementById(`${prefix}-slider-start`);
+  const re = document.getElementById(`${prefix}-slider-end`);
+  if(rs) rs.value = si;
+  if(re) re.value = ei;
+  _updateDualSliderUI(prefix, dates, si, ei);
+}
+
 function t3InitSlider(filteredDates, firstTxDate){
   // 全部可用日期，但從最早交易日起算
   const allDates = state.t3_pRows.map(r=>r.date).filter(Boolean);
