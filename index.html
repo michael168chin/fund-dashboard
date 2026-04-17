@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.32 (整合版)
+     版本：V2.33 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1022,10 +1022,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.32  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.33  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.32 (整合版)';
+const APP_VERSION = 'V2.33 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1140,6 +1140,7 @@ let state = {
   showFundNameT3: true,   // Tab3 標的名稱顯示模式
   t3_showDiff: true,      // Tooltip 顯示與前日比較箭頭
   t3_showCashDiv: false,    // 顯示現金配息相關欄位（預設隱藏）
+  t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   showFundNameT4: true,   // Tab4 標的名稱顯示模式
   // Tab4
@@ -2753,7 +2754,7 @@ function t4Redraw(){
   if(state.t4_chart) state.t4_chart.destroy();
   const t4XTickCb = function(val){
     const date = allDates[val]; if(!date) return '';
-    return date.slice(0,7);  // 一律顯示 YYYY/MM
+    return date;  // 顯示 YYYY/MM/DD（即原始格式）
   };
 
   state.t4_chart = new Chart(document.getElementById('t4-chart'),{
@@ -3574,6 +3575,7 @@ function t3Redraw(){
     pointHoverRadius: 6,
     fill: seriesList.length === 1,
     tension: 0.3,
+    hidden: state.t3VisMap[sr.key] === false,
   }));
 
   // 若分開模式超過1條，另加一條「合計」虛線（右軸，可隱藏）
@@ -3595,7 +3597,7 @@ function t3Redraw(){
   if(state.t3_chart) state.t3_chart.destroy();
   const t3XTickCb = function(val){
     const date = dates[val]; if(!date) return '';
-    return date.slice(0,7);  // 一律顯示 YYYY/MM
+    return date;  // 顯示 YYYY/MM/DD（即原始格式）
   };
 
   state.t3_chart = new Chart(document.getElementById('t3-chart'), {
@@ -3886,11 +3888,31 @@ function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
 }
 
 function t3RenderLegend(seriesList){
-  document.getElementById('t3-legend').innerHTML = seriesList.map(sr=>`
-    <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#555;">
+  document.getElementById('t3-legend').innerHTML = seriesList.map(sr=>{
+    const hidden  = state.t3VisMap[sr.key] === false;
+    const opacity = hidden ? '0.35' : '1';
+    const safe    = sr.key.replace(/'/g,"\\'");
+    return `<span onclick="t3ToggleVis('${safe}')"
+      style="display:flex;align-items:center;gap:5px;font-size:12px;color:#555;cursor:pointer;
+        opacity:${opacity};padding:2px 6px;border-radius:4px;margin-bottom:2px;
+        border:1px solid ${hidden?'#e2e8f0':'transparent'};
+        background:${hidden?'#f8fafc':'transparent'};" title="${hidden?'點擊顯示':'點擊隱藏'}">
       <span style="width:20px;height:3px;border-radius:2px;background:${sr.color};display:inline-block;"></span>
       ${sr.key}
-    </span>`).join('');
+    </span>`;
+  }).join('');
+}
+
+function t3ToggleVis(label){
+  state.t3VisMap[label] = state.t3VisMap[label] !== false ? false : true;
+  const vis = state.t3VisMap[label] !== false;
+  if(state.t3_chart){
+    state.t3_chart.data.datasets.forEach((d,i)=>{
+      if(d.label === label) state.t3_chart.setDatasetVisibility(i, vis);
+    });
+    state.t3_chart.update();
+  }
+  t3RenderLegend(state.t3_chart ? state.t3_chart.data.datasets.map(d=>({ key:d.label, color:d.borderColor })) : []);
 }
 
 function t3SetStatus(msg,isErr){
@@ -4771,7 +4793,7 @@ function t5Redraw(){
   // X 軸 tick callback：一律顯示 YYYY/MM
   const xTickCb = function(val){
     const date = allDates[val]; if(!date) return '';
-    return date.slice(0,7);
+    return date;  // 顯示完整 YYYY/MM/DD
   };
 
   if(state.t5_chart) state.t5_chart.destroy();
