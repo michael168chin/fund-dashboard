@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.33 (整合版)
+     版本：V2.34 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1022,10 +1022,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.33  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.34  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.33 (整合版)';
+const APP_VERSION = 'V2.34 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3910,6 +3910,14 @@ function t3ToggleVis(label){
     state.t3_chart.data.datasets.forEach((d,i)=>{
       if(d.label === label) state.t3_chart.setDatasetVisibility(i, vis);
     });
+    // 若切換的是「合計（右軸）」，同步更新右軸顯示
+    if(label === '合計（右軸）'){
+      const showRight = vis &&
+        state.t3_mode === 'split' &&
+        state.t3_chart.data.datasets.some(d=>d.label==='合計（右軸）');
+      state.t3_chart.options.scales.yRight.display = showRight;
+      state.t3_chart.options.scales.yRight.title.display = showRight;
+    }
     state.t3_chart.update();
   }
   t3RenderLegend(state.t3_chart ? state.t3_chart.data.datasets.map(d=>({ key:d.label, color:d.borderColor })) : []);
