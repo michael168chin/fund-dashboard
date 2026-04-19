@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.34 (整合版)
+     版本：V2.35 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1022,10 +1022,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.34  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.35  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.34 (整合版)';
+const APP_VERSION = 'V2.35 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1424,16 +1424,36 @@ function parseNav(html){
   if(!html) return {nav:null,navDate:null,navChg:null,navChgPct:null};
   try{
     const doc=new DOMParser().parseFromString(html,'text/html');
-    const txt=(doc.body.textContent||'').replace(/\s+/g,' ');
+
+    // ── 方法1：優先從 DOM 結構讀取（最精確，跨瀏覽器一致）──
+    // 嘗試從表格中找「淨值」欄，避免把漲跌金額誤判
+    for(const el of doc.querySelectorAll('td,th,span,div')){
+      const t=el.textContent.trim();
+      if(t==='淨值'||t==='基準價'||t==='每單位淨值'){
+        // 找緊鄰的數值 td
+        const next=el.nextElementSibling||el.parentElement?.nextElementSibling?.querySelector('td');
+        if(next){
+          const v=parseFloat(next.textContent.replace(/,/g,'').trim());
+          if(isNavPlausible(v)){
+            const dateTxt=findDateNear(el,doc);
+            return {nav:v,navDate:dateTxt,navChg:null,navChgPct:null};
+          }
+        }
+      }
+    }
+
+    // ── 方法2：從「近30日淨值」區段解析 ──
+    const txt=(doc.body.textContent||'').replace(/[\r\n\t]+/g,' ').replace(/ {2,}/g,' ');
     const idx=txt.indexOf('近30日淨值');
     if(idx!==-1){
       const seg=txt.substring(idx,idx+3000);
-      const re=/(\d{1,2}[\/-]\d{1,2})\s+(\d+\.\d+)/g;
+      // 明確要求淨值 > 0.5（排除漲跌金額，通常 < 0.5）
+      const re=/(\d{1,2}[\/-]\d{1,2})\s+([0-9]+\.[0-9]+)/g;
       let cands=[],m;
       while((m=re.exec(seg))!==null){
         const raw=m[1], val=parseFloat(m[2]);
         const fd=raw.length<=5?resolveDateWithYear(...raw.split(/[\/-]/)):raw.replace(/-/g,'/');
-        if(val>0) cands.push({date:fd,nav:val});
+        if(isNavPlausible(val)) cands.push({date:fd,nav:val});
       }
       if(cands.length){
         cands.sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -1442,12 +1462,50 @@ function parseNav(html){
         return {nav:lat.nav,navDate:lat.date,navChg:chg,navChgPct:pct};
       }
     }
+
+    // ── 方法3：meta og:description ──
     const meta=doc.querySelector('meta[property="og:description"]');
-    if(meta?.content){ const m=meta.content.match(/淨值[:：\s]*([\d.]+)/); if(m){ const dm=meta.content.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||meta.content.match(/(\d{1,2}[\/-]\d{1,2})/); return {nav:parseFloat(m[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null}; } }
-    const m2=txt.match(/淨值(?:(?!淨值).){0,100}?(\d+\.\d{2,4})/);
-    if(m2){ const dm=txt.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||txt.match(/(\d{1,2}[\/-]\d{1,2})/); return {nav:parseFloat(m2[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null}; }
-  }catch(e){}
+    if(meta?.content){
+      const m=meta.content.match(/淨值[:：\s]*([\d.]+)/);
+      if(m&&isNavPlausible(parseFloat(m[1]))){
+        const dm=meta.content.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||meta.content.match(/(\d{1,2}[\/-]\d{1,2})/);
+        return {nav:parseFloat(m[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null};
+      }
+    }
+
+    // ── 方法4：全文比對「淨值」附近的數字，過濾合理範圍 ──
+    const m2=txt.match(/淨值(?:(?!淨值).){0,80}?([0-9]+\.[0-9]{2,4})/);
+    if(m2&&isNavPlausible(parseFloat(m2[1]))){
+      const dm=txt.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||txt.match(/(\d{1,2}[\/-]\d{1,2})/);
+      return {nav:parseFloat(m2[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null};
+    }
+  }catch(e){ console.warn('[parseNav]',e); }
   return {nav:null,navDate:null,navChg:null,navChgPct:null};
+}
+
+// 判斷數值是否在合理的淨值範圍內（0.5 ~ 99999）
+// 漲跌金額通常很小（< 0.5 或帶正負號）；淨值通常 >= 0.5
+function isNavPlausible(v){
+  return typeof v==='number' && !isNaN(v) && v >= 0.5 && v < 99999;
+}
+
+// 在指定元素附近搜尋日期文字
+function findDateNear(el, doc){
+  const row = el.closest('tr');
+  if(row){
+    const txt = row.textContent;
+    const m = txt.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/) || txt.match(/(\d{1,2}[\/-]\d{1,2})/);
+    if(m) return m[1].length<=5 ? resolveDateWithYear(...m[1].split(/[\/-]/)) : m[1].replace(/-/g,'/');
+  }
+  // 往上找最近的日期
+  const bodyTxt = doc.body.textContent||'';
+  const pos = bodyTxt.indexOf(el.textContent.trim());
+  if(pos>0){
+    const nearby = bodyTxt.substring(Math.max(0,pos-200), pos+200);
+    const m2 = nearby.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/);
+    if(m2) return m2[1].replace(/-/g,'/');
+  }
+  return null;
 }
 
 function parseDiv(html){
