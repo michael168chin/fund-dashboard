@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.36 (整合版)
+     版本：V2.37 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -370,6 +370,13 @@
                 <button id="t3-btn-divbars-hide" onclick="t3SetShowDivBars(false)" class="btn btn-primary text-xs">隱藏</button>
               </div>
             </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">十字線</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-crosshair-show" onclick="t3SetCrosshair(true)" class="btn text-xs">顯示</button>
+                <button id="t3-btn-crosshair-hide" onclick="t3SetCrosshair(false)" class="btn btn-primary text-xs">隱藏</button>
+              </div>
+            </div>
             <button id="t3-btn-reload" class="btn text-xs" style="align-self:flex-end;">重新載入</button>
           </div>
           <!-- Date bar -->
@@ -405,6 +412,7 @@
           <!-- Chart -->
           <div style="position:relative;width:100%;height:360px;">
             <canvas id="t3-chart"></canvas>
+            <canvas id="t3-crosshair" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
             <div id="tip"></div>
           </div>
           <!-- 時間範圍雙端拉桿 -->
@@ -928,12 +936,24 @@
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-2">圖表資料</label>
             <label class="flex items-center gap-2 text-xs mb-1 cursor-pointer"><input type="checkbox" id="s-filter-outliers" class="rounded" checked> 自動過濾異常淨值</label>
-
             <div class="flex items-center gap-2 text-xs">
               <span class="text-slate-500">異常門檻</span>
               <input type="number" id="s-outlier-threshold" min="5" max="80" step="5" value="30"
                 class="w-14 px-1 py-0.5 border border-slate-300 rounded text-right text-xs">
               <span class="text-slate-500">%</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-2">第3頁籤 軸範圍（留空=自動）</label>
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">左軸最小</span>
+                <input type="number" id="s-t3-ymin" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
+              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">左軸最大</span>
+                <input type="number" id="s-t3-ymax" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
+              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">右軸最小</span>
+                <input type="number" id="s-t3-y2min" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
+              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">右軸最大</span>
+                <input type="number" id="s-t3-y2max" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
             </div>
           </div>
           <div>
@@ -1029,10 +1049,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.36  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.37  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.36 (整合版)';
+const APP_VERSION = 'V2.37 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1150,6 +1170,8 @@ let state = {
   t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
+  t3_showCrosshair: false,  // 十字虛線（預設隱藏）
+  t3AxisRange: { yMin:'', yMax:'', y2Min:'', y2Max:'' },  // Tab3 軸刻度自訂
   showFundNameT4: true,   // Tab4 標的名稱顯示模式
   // Tab4
   t4_loaded: false,
@@ -1999,6 +2021,10 @@ function openSettings(){
   document.getElementById('s-sticky-nav').checked=state.stickyNav;
   document.getElementById('s-filter-outliers').checked=state.filterOutliers;
   document.getElementById('s-outlier-threshold').value=Math.round(state.outlierThreshold*100);
+  document.getElementById('s-t3-ymin').value  = state.t3AxisRange?.yMin  || '';
+  document.getElementById('s-t3-ymax').value  = state.t3AxisRange?.yMax  || '';
+  document.getElementById('s-t3-y2min').value = state.t3AxisRange?.y2Min || '';
+  document.getElementById('s-t3-y2max').value = state.t3AxisRange?.y2Max || '';
   const nav=document.getElementById('main-nav-bar');
   if(nav){ if(state.stickyNav){ nav.classList.add('sticky','top-0','z-40'); } else { nav.classList.remove('sticky','top-0','z-40'); } }
   document.getElementById('s-freeze-col').checked=state.freezeNameCol;
@@ -3576,6 +3602,7 @@ function t3Redraw(){
   t3RenderCards(seriesList, totalVals, dates, seriesList.map(sr=>sr.cashDivSnap));
   t3RenderLegend(seriesList);
   t3InitSlider(dates, firstTxDate);
+  t3BindCrosshair();
 
   const FILL_COLORS = ['rgba(24,95,165,0.07)','rgba(29,158,117,0.07)','rgba(216,90,48,0.07)',
     'rgba(155,89,182,0.07)','rgba(186,117,23,0.07)','rgba(153,53,86,0.07)'];
@@ -3689,7 +3716,12 @@ function t3Redraw(){
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t3XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
         y:{
           position:'left',
-          min: state.t3_showDivBars && linePad > 0 ? yMinWithPad : undefined,
+          min: (() => {
+            const manual = state.t3AxisRange.yMin !== '' ? parseFloat(state.t3AxisRange.yMin) : NaN;
+            if(!isNaN(manual)) return manual;
+            return state.t3_showDivBars && linePad > 0 ? yMinWithPad : undefined;
+          })(),
+          max: (() => { const m=parseFloat(state.t3AxisRange.yMax); return isNaN(m)?undefined:m; })(),
           ticks:{font:{size:11},color:'#888',callback:v=>t3FmtAxis(v)},
           grid:{color:'rgba(0,0,0,0.05)'}
         },
@@ -3714,6 +3746,8 @@ function t3Redraw(){
         yRight:{
           position:'right',
           display: state.t3_mode==='split' && seriesList.length>1 && state.t3_showTotal,
+          min: (() => { const m=parseFloat(state.t3AxisRange.y2Min); return isNaN(m)?undefined:m; })(),
+          max: (() => { const m=parseFloat(state.t3AxisRange.y2Max); return isNaN(m)?undefined:m; })(),
           ticks:{ font:{size:11}, color:'#666', callback:v=>t3FmtAxis(v) },
           grid:{ drawOnChartArea:false },
           title:{ display:true, text:'合計', font:{size:11}, color:'#666' }
@@ -3727,7 +3761,29 @@ function t3ShowTip(ctx, dates, seriesList){
   const box = document.getElementById('tip');
   if(ctx.tooltip.opacity===0){ if(!state.t3_tipLocked) box.style.display='none'; return; }
   if(state.t3_tipLocked) return;
-  const idx     = ctx.tooltip.dataPoints[0].dataIndex;
+  const dps = ctx.tooltip.dataPoints;
+  // 若點到 💰 配息散點，顯示配息金額
+  const divHit = dps.find(dp=>{
+    const ds = state.t3_chart?.data?.datasets?.[dp.datasetIndex];
+    return ds && ds.label && ds.label.endsWith(' 配息') && dp.raw!==null;
+  });
+  if(divHit){
+    const ds   = state.t3_chart.data.datasets[divHit.datasetIndex];
+    const amt  = divHit.raw;
+    const sym  = state.t3_ccy==='NTD' ? 'NT$' : 'US$';
+    const dispAmt = state.t3_ccy==='NTD' ? amt : amt/t3GetFX(dates[divHit.dataIndex]);
+    box.innerHTML=`<div style="font-weight:500;font-size:13px;color:#92400e;margin-bottom:4px;">💰 ${ds.label}</div>
+      <div style="font-size:12px;color:#1a1a1a;font-weight:600;">${sym}${Math.round(dispAmt).toLocaleString()}</div>`;
+    box.style.display='block';
+    const canvas=document.getElementById('t3-chart');
+    const cw=canvas.clientWidth,ch=canvas.clientHeight;
+    const bw=180,bh=box.offsetHeight||60;
+    let lft=ctx.tooltip.caretX+14; if(lft+bw>cw) lft=ctx.tooltip.caretX-bw-10;
+    let top=ctx.tooltip.caretY-20; if(top+bh>ch) top=ch-bh-8; if(top<0) top=4;
+    box.style.left=lft+'px'; box.style.top=top+'px';
+    return;
+  }
+  const idx     = dps[0].dataIndex;
   const date    = dates[idx];
   const prevDate= idx > 0 ? dates[idx-1] : null;
   const fx      = t3GetFX(date);
@@ -4029,6 +4085,157 @@ function t3ToggleVis(label){
     state.t3_chart.update();
   }
   t3RenderLegend(state.t3_chart ? state.t3_chart.data.datasets.map(d=>({ key:d.label, color:d.borderColor })) : []);
+}
+
+// ── 點選圖表外區域關閉 tooltip ──────────────────────────
+document.addEventListener('click', e=>{
+  const tip3=document.getElementById('tip');
+  const tip4=document.getElementById('t4-tip');
+  const tip5=document.getElementById('t5-tip');
+  const c3=document.getElementById('t3-chart');
+  const c4=document.getElementById('t4-chart');
+  const c5=document.getElementById('t5-chart');
+  // Tab3
+  if(tip3 && tip3.style.display!=='none'){
+    if(!tip3.contains(e.target) && e.target!==c3){
+      tip3.style.display='none'; state.t3_tipLocked=false;
+    }
+  }
+  // Tab4
+  if(tip4 && tip4.style.display!=='none'){
+    if(!tip4.contains(e.target) && e.target!==c4){
+      tip4.style.display='none'; state.t4_tipLocked=false;
+    }
+  }
+  // Tab5
+  if(tip5 && tip5.style.display!=='none'){
+    if(!tip5.contains(e.target) && e.target!==c5){
+      tip5.style.display='none'; state.t5_tipLocked=false;
+    }
+  }
+});
+
+// ── 十字線 ──────────────────────────────────────────────
+function t3SetCrosshair(val){
+  state.t3_showCrosshair = val;
+  document.getElementById('t3-btn-crosshair-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-crosshair-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){
+    // 清除 overlay
+    const oc = document.getElementById('t3-crosshair');
+    if(oc){ const ctx=oc.getContext('2d'); ctx.clearRect(0,0,oc.width,oc.height); }
+  }
+}
+
+function t3DrawCrosshair(chart, mouseX, mouseY){
+  const oc = document.getElementById('t3-crosshair');
+  if(!oc || !state.t3_showCrosshair) return;
+  // 同步 overlay canvas 的實際像素尺寸
+  const rect = oc.getBoundingClientRect();
+  if(oc.width !== Math.round(rect.width) || oc.height !== Math.round(rect.height)){
+    oc.width  = Math.round(rect.width);
+    oc.height = Math.round(rect.height);
+  }
+  const ctx = oc.getContext('2d');
+  ctx.clearRect(0,0,oc.width,oc.height);
+  if(mouseX === null) return;
+
+  const area  = chart.chartArea;
+  // 只在圖表繪圖區內顯示
+  if(mouseX < area.left || mouseX > area.right || mouseY < area.top || mouseY > area.bottom) return;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(100,100,100,0.55)';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([5,4]);
+
+  // 縱線
+  ctx.beginPath(); ctx.moveTo(mouseX,area.top); ctx.lineTo(mouseX,area.bottom); ctx.stroke();
+  // 橫線
+  ctx.beginPath(); ctx.moveTo(area.left,mouseY); ctx.lineTo(area.right,mouseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font      = '10px sans-serif';
+  ctx.textAlign = 'center';
+
+  // X 軸標籤：找最近的資料點日期
+  const scale = chart.scales.x;
+  if(scale){
+    const idx   = Math.round(scale.getValueForPixel(mouseX));
+    const labels = chart.data.labels;
+    // labels 是數字 index，對應 t3_dates（從 closure 取不到，用 scale.ticks）
+    const ticks = scale.ticks;
+    // 找最近的 tick label
+    let nearLabel = '';
+    let minDist = Infinity;
+    ticks.forEach(t=>{
+      const px = scale.getPixelForValue(t.value);
+      const d  = Math.abs(px - mouseX);
+      if(d < minDist){ minDist=d; nearLabel=t.label||''; }
+    });
+    if(nearLabel){
+      const tx = Math.max(area.left+20, Math.min(area.right-20, mouseX));
+      ctx.fillStyle='rgba(50,50,50,0.8)';
+      ctx.fillRect(tx-22, area.bottom+2, 44, 14);
+      ctx.fillStyle='#fff';
+      ctx.fillText(nearLabel, tx, area.bottom+11);
+    }
+  }
+
+  // 左軸 Y 標籤
+  const yScale = chart.scales.y;
+  if(yScale){
+    const yVal = yScale.getValueForPixel(mouseY);
+    const label = typeof yVal==='number' ? t3FmtAxis(yVal) : '';
+    const ty = Math.max(area.top+8, Math.min(area.bottom-4, mouseY));
+    ctx.textAlign='right';
+    ctx.fillStyle='rgba(50,50,50,0.8)';
+    ctx.fillRect(area.left-40, ty-7, 38, 14);
+    ctx.fillStyle='#888';
+    ctx.fillText(label, area.left-4, ty+4);
+  }
+
+  // 右軸 Y 標籤
+  const yRScale = chart.scales.yRight;
+  if(yRScale && yRScale.display){
+    const yVal = yRScale.getValueForPixel(mouseY);
+    const label = typeof yVal==='number' ? t3FmtAxis(yVal) : '';
+    const ty = Math.max(area.top+8, Math.min(area.bottom-4, mouseY));
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(50,50,50,0.8)';
+    ctx.fillRect(area.right+2, ty-7, 38, 14);
+    ctx.fillStyle='#666';
+    ctx.fillText(label, area.right+4, ty+4);
+  }
+
+  ctx.restore();
+}
+
+// 綁定 t3 圖表的 mousemove（在 t3Redraw 後呼叫）
+function t3BindCrosshair(){
+  const canvas = document.getElementById('t3-chart');
+  if(!canvas || canvas._crosshairBound) return;
+  canvas._crosshairBound = true;
+  canvas.addEventListener('mousemove', e=>{
+    if(!state.t3_showCrosshair || !state.t3_chart) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+    t3DrawCrosshair(state.t3_chart, (e.clientX-rect.left)*scaleX, (e.clientY-rect.top)*scaleY);
+  });
+  canvas.addEventListener('mouseleave', ()=>{
+    const oc=document.getElementById('t3-crosshair');
+    if(oc){ const cx=oc.getContext('2d'); cx.clearRect(0,0,oc.width,oc.height); }
+  });
+}
+
+// ── 軸範圍即時套用 ────────────────────────────────────
+function t3ApplyAxisRange(){
+  state.t3AxisRange.yMin  = document.getElementById('s-t3-ymin')?.value  || '';
+  state.t3AxisRange.yMax  = document.getElementById('s-t3-ymax')?.value  || '';
+  state.t3AxisRange.y2Min = document.getElementById('s-t3-y2min')?.value || '';
+  state.t3AxisRange.y2Max = document.getElementById('s-t3-y2max')?.value || '';
+  if(state.t3_loaded) t3Redraw();
 }
 
 function t3SetStatus(msg,isErr){
