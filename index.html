@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.34 (整合版)
+     版本：V2.35 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -361,6 +361,13 @@
               <div class="flex gap-1">
                 <button id="t3-btn-cashdiv-in" onclick="t3SetIncludeCashDiv(true)" class="btn text-xs">計入</button>
                 <button id="t3-btn-cashdiv-out" onclick="t3SetIncludeCashDiv(false)" class="btn btn-primary text-xs">不計入</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">配息柱狀圖</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-divbars-show" onclick="t3SetShowDivBars(true)" class="btn text-xs">顯示</button>
+                <button id="t3-btn-divbars-hide" onclick="t3SetShowDivBars(false)" class="btn btn-primary text-xs">隱藏</button>
               </div>
             </div>
             <button id="t3-btn-reload" class="btn text-xs" style="align-self:flex-end;">重新載入</button>
@@ -1022,10 +1029,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.34  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.35  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.34 (整合版)';
+const APP_VERSION = 'V2.35 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1142,6 +1149,7 @@ let state = {
   t3_showCashDiv: false,    // 顯示現金配息相關欄位（預設隱藏）
   t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
+  t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
   showFundNameT4: true,   // Tab4 標的名稱顯示模式
   // Tab4
   t4_loaded: false,
@@ -3275,6 +3283,13 @@ function t3SetIncludeCashDiv(val){
   if(state.t3_loaded) t3Redraw();
 }
 
+function t3SetShowDivBars(val){
+  state.t3_showDivBars = val;
+  document.getElementById('t3-btn-divbars-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-divbars-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t3_loaded) t3Redraw();
+}
+
 function t3SetShowCashDiv(val){
   state.t3_showCashDiv = val;
   document.getElementById('t3-btn-cashdiv-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
@@ -3594,6 +3609,55 @@ function t3Redraw(){
     });
   }
 
+  // ── 配息柱狀圖：各組各一個顏色，映射到第二左軸 yLeft2 ──
+  let maxSingleDiv = 0;  // 找最大單次配息金額，用於設定刻度上限
+  if(state.t3_showDivBars){
+    seriesList.forEach(sr=>{
+      if(!sr.cashDivSnap) return;
+      dates.forEach((date,di)=>{
+        const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
+        const cdPrev = di>0 ? (sr.cashDivSnap[dates[di-1]] || {total_ntd:0}) : {total_ntd:0};
+        const delta  = cd.total_ntd - cdPrev.total_ntd;
+        if(delta > maxSingleDiv) maxSingleDiv = delta;
+      });
+    });
+
+    seriesList.forEach(sr=>{
+      if(!sr.cashDivSnap) return;
+      // 計算每日新增配息（累計差值，只有配息日才 > 0）
+      const barData = dates.map((date,di)=>{
+        const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
+        const cdPrev = di>0 ? (sr.cashDivSnap[dates[di-1]] || {total_ntd:0}) : {total_ntd:0};
+        const delta  = cd.total_ntd - cdPrev.total_ntd;
+        return delta > 0 ? delta : null;
+      });
+      // 半透明填色（各組顏色 + 透明度）
+      const col = sr.color;
+      const bg  = col+'55';  // 33% 透明度
+      datasets.push({
+        type: 'bar',
+        label: `${sr.key} 配息`,
+        data: barData,
+        backgroundColor: bg,
+        borderColor: col,
+        borderWidth: 1,
+        borderRadius: 2,
+        yAxisID: 'yLeft2',
+        hidden: state.t3VisMap[`${sr.key} 配息`] === false,
+        spanGaps: false,
+      });
+    });
+  }
+
+  // 計算左軸留白：最小值往下延伸 10%
+  const allLineVals = datasets
+    .filter(d=>d.type !== 'bar' && d.yAxisID !== 'yRight')
+    .flatMap(d=>d.data||[]).filter(v=>v!==null&&v!==undefined);
+  const lineMin = allLineVals.length ? Math.min(...allLineVals) : 0;
+  const lineMax = allLineVals.length ? Math.max(...allLineVals) : 0;
+  const linePad = (lineMax - lineMin) * 0.1;
+  const yMinWithPad = lineMin - linePad;
+
   if(state.t3_chart) state.t3_chart.destroy();
   const t3XTickCb = function(val){
     const date = dates[val]; if(!date) return '';
@@ -3612,7 +3676,30 @@ function t3Redraw(){
       },
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t3XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
-        y:{ position:'left', ticks:{font:{size:11},color:'#888',callback:v=>t3FmtAxis(v)}, grid:{color:'rgba(0,0,0,0.05)'} },
+        y:{
+          position:'left',
+          min: state.t3_showDivBars && linePad > 0 ? yMinWithPad : undefined,
+          ticks:{font:{size:11},color:'#888',callback:v=>t3FmtAxis(v)},
+          grid:{color:'rgba(0,0,0,0.05)'}
+        },
+        yLeft2:{
+          position:'left',
+          display: state.t3_showDivBars && maxSingleDiv > 0,
+          min: 0,
+          max: maxSingleDiv * 10,
+          ticks:{
+            font:{size:10}, color:'#f59e0b',
+            callback: v=>{
+              if(v===0) return '0';
+              if(v>=1e6) return `${(v/1e6).toFixed(1)}M`;
+              if(v>=1e4) return `${Math.round(v/1e3)}K`;
+              return Math.round(v).toLocaleString();
+            }
+          },
+          title:{ display:true, text:'配息(NT$)', font:{size:10}, color:'#f59e0b' },
+          grid:{ drawOnChartArea:false },
+          offset: true,
+        },
         yRight:{
           position:'right',
           display: state.t3_mode==='split' && seriesList.length>1 && state.t3_showTotal,
@@ -3888,17 +3975,27 @@ function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
 }
 
 function t3RenderLegend(seriesList){
-  document.getElementById('t3-legend').innerHTML = seriesList.map(sr=>{
-    const hidden  = state.t3VisMap[sr.key] === false;
+  // 折線圖例
+  let items = seriesList.map(sr=>({ key: sr.key, color: sr.color, isBar: false }));
+  // 配息柱狀圖圖例
+  if(state.t3_showDivBars){
+    seriesList.forEach(sr=>{
+      if(sr.cashDivSnap) items.push({ key:`${sr.key} 配息`, color: sr.color, isBar: true });
+    });
+  }
+  document.getElementById('t3-legend').innerHTML = items.map(item=>{
+    const hidden  = state.t3VisMap[item.key] === false;
     const opacity = hidden ? '0.35' : '1';
-    const safe    = sr.key.replace(/'/g,"\\'");
+    const safe    = item.key.replace(/'/g,"\'");
+    const icon    = item.isBar
+      ? `<span style="width:14px;height:10px;border-radius:2px;background:${item.color}55;border:1px solid ${item.color};display:inline-block;"></span>`
+      : `<span style="width:20px;height:3px;border-radius:2px;background:${item.color};display:inline-block;"></span>`;
     return `<span onclick="t3ToggleVis('${safe}')"
       style="display:flex;align-items:center;gap:5px;font-size:12px;color:#555;cursor:pointer;
         opacity:${opacity};padding:2px 6px;border-radius:4px;margin-bottom:2px;
         border:1px solid ${hidden?'#e2e8f0':'transparent'};
         background:${hidden?'#f8fafc':'transparent'};" title="${hidden?'點擊顯示':'點擊隱藏'}">
-      <span style="width:20px;height:3px;border-radius:2px;background:${sr.color};display:inline-block;"></span>
-      ${sr.key}
+      ${icon}${item.key}
     </span>`;
   }).join('');
 }
