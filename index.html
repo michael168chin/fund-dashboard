@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.35 (整合版)
+     版本：V2.36 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -364,7 +364,7 @@
               </div>
             </div>
             <div class="flex flex-col gap-1.5">
-              <div class="text-xs text-slate-500">配息柱狀圖</div>
+              <div class="text-xs text-slate-500">💰 配息符號</div>
               <div class="flex gap-1">
                 <button id="t3-btn-divbars-show" onclick="t3SetShowDivBars(true)" class="btn text-xs">顯示</button>
                 <button id="t3-btn-divbars-hide" onclick="t3SetShowDivBars(false)" class="btn btn-primary text-xs">隱藏</button>
@@ -1029,10 +1029,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.35  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.36  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.35 (整合版)';
+const APP_VERSION = 'V2.36 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3622,36 +3622,47 @@ function t3Redraw(){
       });
     });
 
+    // 預先建立 💰 emoji 的 Image 物件，供 Chart.js 的 pointStyle 使用
+    if(!window._t3MoneyImg){
+      const sz = 28;
+      const oc = document.createElement('canvas');
+      oc.width = sz; oc.height = sz;
+      const cx = oc.getContext('2d');
+      cx.font = `${sz-2}px serif`;
+      cx.textAlign = 'center';
+      cx.textBaseline = 'middle';
+      cx.fillText('💰', sz/2, sz/2);
+      window._t3MoneyImg = new Image();
+      window._t3MoneyImg.src = oc.toDataURL();
+    }
+
     seriesList.forEach(sr=>{
       if(!sr.cashDivSnap) return;
       // 計算每日新增配息（累計差值，只有配息日才 > 0）
-      const barData = dates.map((date,di)=>{
+      const scatterData = dates.map((date,di)=>{
         const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
         const cdPrev = di>0 ? (sr.cashDivSnap[dates[di-1]] || {total_ntd:0}) : {total_ntd:0};
         const delta  = cd.total_ntd - cdPrev.total_ntd;
         return delta > 0 ? delta : null;
       });
-      // 半透明填色（各組顏色 + 透明度）
-      const col = sr.color;
-      const bg  = col+'55';  // 33% 透明度
       datasets.push({
-        type: 'bar',
+        type: 'scatter',
         label: `${sr.key} 配息`,
-        data: barData,
-        backgroundColor: bg,
-        borderColor: col,
-        borderWidth: 1,
-        borderRadius: 2,
+        data: scatterData,
+        pointStyle: window._t3MoneyImg,
+        pointRadius: 18,
+        pointHoverRadius: 22,
+        showLine: false,
         yAxisID: 'yLeft2',
         hidden: state.t3VisMap[`${sr.key} 配息`] === false,
-        spanGaps: false,
+        divAmounts: scatterData,  // 儲存金額供 tooltip 使用
       });
     });
   }
 
   // 計算左軸留白：最小值往下延伸 10%
   const allLineVals = datasets
-    .filter(d=>d.type !== 'bar' && d.yAxisID !== 'yRight')
+    .filter(d=>d.type !== 'bar' && d.type !== 'scatter' && d.yAxisID !== 'yRight')
     .flatMap(d=>d.data||[]).filter(v=>v!==null&&v!==undefined);
   const lineMin = allLineVals.length ? Math.min(...allLineVals) : 0;
   const lineMax = allLineVals.length ? Math.max(...allLineVals) : 0;
@@ -3988,7 +3999,7 @@ function t3RenderLegend(seriesList){
     const opacity = hidden ? '0.35' : '1';
     const safe    = item.key.replace(/'/g,"\'");
     const icon    = item.isBar
-      ? `<span style="width:14px;height:10px;border-radius:2px;background:${item.color}55;border:1px solid ${item.color};display:inline-block;"></span>`
+      ? `<span style="font-size:14px;line-height:1;">💰</span>`
       : `<span style="width:20px;height:3px;border-radius:2px;background:${item.color};display:inline-block;"></span>`;
     return `<span onclick="t3ToggleVis('${safe}')"
       style="display:flex;align-items:center;gap:5px;font-size:12px;color:#555;cursor:pointer;
