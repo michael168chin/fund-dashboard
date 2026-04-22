@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.37 (整合版)
+     版本：V2.38 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -368,6 +368,13 @@
               <div class="flex gap-1">
                 <button id="t3-btn-divbars-show" onclick="t3SetShowDivBars(true)" class="btn text-xs">顯示</button>
                 <button id="t3-btn-divbars-hide" onclick="t3SetShowDivBars(false)" class="btn btn-primary text-xs">隱藏</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">累積配息線</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-divcurve-show" onclick="t3SetShowDivCurve(true)" class="btn text-xs">顯示</button>
+                <button id="t3-btn-divcurve-hide" onclick="t3SetShowDivCurve(false)" class="btn btn-primary text-xs">隱藏</button>
               </div>
             </div>
             <div class="flex flex-col gap-1.5">
@@ -945,15 +952,19 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-2">第3頁籤 軸範圍（留空=自動）</label>
-            <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">左軸最小</span>
-                <input type="number" id="s-t3-ymin" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
-              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">左軸最大</span>
-                <input type="number" id="s-t3-ymax" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
-              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">右軸最小</span>
-                <input type="number" id="s-t3-y2min" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
-              <div class="flex items-center gap-1"><span class="text-slate-500 w-14">右軸最大</span>
-                <input type="number" id="s-t3-y2max" placeholder="自動" class="flex-1 px-1 py-0.5 border border-slate-300 rounded text-right text-xs" oninput="t3ApplyAxisRange()"></div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;">
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span style="color:#64748b;width:44px;flex-shrink:0;">左軸最小</span>
+                <input type="number" id="s-t3-ymin" placeholder="自動" style="width:64px;padding:2px 4px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()">
+                <span style="color:#64748b;width:44px;flex-shrink:0;">左軸最大</span>
+                <input type="number" id="s-t3-ymax" placeholder="自動" style="width:64px;padding:2px 4px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()">
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span style="color:#64748b;width:44px;flex-shrink:0;">右軸最小</span>
+                <input type="number" id="s-t3-y2min" placeholder="自動" style="width:64px;padding:2px 4px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()">
+                <span style="color:#64748b;width:44px;flex-shrink:0;">右軸最大</span>
+                <input type="number" id="s-t3-y2max" placeholder="自動" style="width:64px;padding:2px 4px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()">
+              </div>
             </div>
           </div>
           <div>
@@ -1049,10 +1060,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.37  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.38  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.37 (整合版)';
+const APP_VERSION = 'V2.38 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1170,6 +1181,7 @@ let state = {
   t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
+  t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
   t3_showCrosshair: false,  // 十字虛線（預設隱藏）
   t3AxisRange: { yMin:'', yMax:'', y2Min:'', y2Max:'' },  // Tab3 軸刻度自訂
   showFundNameT4: true,   // Tab4 標的名稱顯示模式
@@ -3309,6 +3321,13 @@ function t3SetIncludeCashDiv(val){
   if(state.t3_loaded) t3Redraw();
 }
 
+function t3SetShowDivCurve(val){
+  state.t3_showDivCurve = val;
+  document.getElementById('t3-btn-divcurve-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-divcurve-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t3_loaded) t3Redraw();
+}
+
 function t3SetShowDivBars(val){
   state.t3_showDivBars = val;
   document.getElementById('t3-btn-divbars-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
@@ -3678,11 +3697,43 @@ function t3Redraw(){
         data: scatterData,
         pointStyle: window._t3MoneyImg,
         pointRadius: 18,
-        pointHoverRadius: 22,
+        pointHoverRadius: 24,
+        hitRadius: 30,       // 滑鼠在符號 30px 內即可觸發 tooltip
         showLine: false,
         yAxisID: 'yLeft2',
         hidden: state.t3VisMap[`${sr.key} 配息`] === false,
-        divAmounts: scatterData,  // 儲存金額供 tooltip 使用
+        divAmounts: scatterData,
+      });
+    });
+  }
+
+  // ── 累積配息曲線 ──
+  let maxCumDiv = 0;
+  if(state.t3_showDivCurve){
+    seriesList.forEach(sr=>{
+      if(!sr.cashDivSnap) return;
+      dates.forEach(date=>{
+        const v = (sr.cashDivSnap[date]||{total_ntd:0}).total_ntd;
+        if(v > maxCumDiv) maxCumDiv = v;
+      });
+      const cumData = dates.map(date=>{
+        const v = (sr.cashDivSnap[date]||{total_ntd:0}).total_ntd;
+        return state.t3_ccy==='NTD' ? v : v/t3GetFX(date);
+      });
+      datasets.push({
+        type: 'line',
+        label: `${sr.key} 累積配息`,
+        data: cumData,
+        borderColor: sr.color,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [6,3],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        tension: 0.2,
+        yAxisID: 'yLeft3',
+        hidden: state.t3VisMap[`${sr.key} 累積配息`] === false,
       });
     });
   }
@@ -3740,6 +3791,22 @@ function t3Redraw(){
             }
           },
           title:{ display:true, text:'配息(NT$)', font:{size:10}, color:'#f59e0b' },
+          grid:{ drawOnChartArea:false },
+          offset: true,
+        },
+        yLeft3:{
+          position:'left',
+          display: state.t3_showDivCurve && maxCumDiv > 0,
+          min: 0,
+          ticks:{
+            font:{size:10}, color:'#10b981',
+            callback: v=>{
+              if(v>=1e6) return `${(v/1e6).toFixed(1)}M`;
+              if(v>=1e4) return `${Math.round(v/1e3)}K`;
+              return Math.round(v).toLocaleString();
+            }
+          },
+          title:{ display:true, text:'累積配息', font:{size:10}, color:'#10b981' },
           grid:{ drawOnChartArea:false },
           offset: true,
         },
@@ -3914,6 +3981,15 @@ function t3ShowTip(ctx, dates, seriesList){
 
     // ── 現金配息區塊 ──
     if(state.t3_showCashDiv && sr.cashDivSnap){
+      // 找最近一次配息日及金額（往前掃找累積有增加的日期）
+      let lastDivAmt = 0, lastDivDate = '';
+      for(let di2 = idx; di2 >= 1; di2--){
+        const d2 = dates[di2], d2p = dates[di2-1];
+        const cur2  = (sr.cashDivSnap[d2] ||{total_ntd:0}).total_ntd;
+        const prev2 = (sr.cashDivSnap[d2p]||{total_ntd:0}).total_ntd;
+        const delta = cur2 - prev2;
+        if(delta > 0){ lastDivAmt = delta; lastDivDate = d2; break; }
+      }
       const cd     = sr.cashDivSnap[date]     || {ntd:0, usd:0, total_ntd:0};
       const cdPrev = prevDate ? (sr.cashDivSnap[prevDate]||{ntd:0,usd:0,total_ntd:0}) : null;
       const fxNow  = t3GetFX(date);
@@ -3939,6 +4015,12 @@ function t3ShowTip(ctx, dates, seriesList){
         html += `<div style="font-size:11px;font-weight:600;color:#92400e;display:flex;justify-content:space-between;margin-top:2px;border-top:1px solid #fde68a;padding-top:2px;">
           <span>合計（NTD）</span><span>${sym}${t3FmtN(totalDisp)}${totArrow}</span></div>`;
         textLines.push(`  配息合計：${sym}${t3FmtN(totalDisp)}`);
+        if(lastDivAmt > 0){
+          const lastDisp = state.t3_ccy==='NTD' ? lastDivAmt : lastDivAmt / t3GetFX(lastDivDate);
+          html += `<div style="font-size:10px;color:#92400e;display:flex;justify-content:space-between;margin-top:2px;">
+            <span>最近一次配息</span><span>${sym}${t3FmtN(lastDisp)} (${lastDivDate})</span></div>`;
+          textLines.push(`  最近一次：${sym}${t3FmtN(lastDisp)} (${lastDivDate})`);
+        }
       }
       html += `</div>`;
     }
@@ -4044,10 +4126,16 @@ function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
 function t3RenderLegend(seriesList){
   // 折線圖例
   let items = seriesList.map(sr=>({ key: sr.key, color: sr.color, isBar: false }));
-  // 配息柱狀圖圖例
+  // 配息 💰 符號圖例
   if(state.t3_showDivBars){
     seriesList.forEach(sr=>{
       if(sr.cashDivSnap) items.push({ key:`${sr.key} 配息`, color: sr.color, isBar: true });
+    });
+  }
+  // 累積配息線圖例
+  if(state.t3_showDivCurve){
+    seriesList.forEach(sr=>{
+      if(sr.cashDivSnap) items.push({ key:`${sr.key} 累積配息`, color: sr.color, isDivCurve: true });
     });
   }
   document.getElementById('t3-legend').innerHTML = items.map(item=>{
@@ -4056,7 +4144,9 @@ function t3RenderLegend(seriesList){
     const safe    = item.key.replace(/'/g,"\'");
     const icon    = item.isBar
       ? `<span style="font-size:14px;line-height:1;">💰</span>`
-      : `<span style="width:20px;height:3px;border-radius:2px;background:${item.color};display:inline-block;"></span>`;
+      : item.isDivCurve
+        ? `<span style="width:20px;height:0;border-top:2px dashed ${item.color};display:inline-block;vertical-align:middle;"></span>`
+        : `<span style="width:20px;height:3px;border-radius:2px;background:${item.color};display:inline-block;"></span>`;
     return `<span onclick="t3ToggleVis('${safe}')"
       style="display:flex;align-items:center;gap:5px;font-size:12px;color:#555;cursor:pointer;
         opacity:${opacity};padding:2px 6px;border-radius:4px;margin-bottom:2px;
