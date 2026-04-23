@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.39 (整合版)
+     版本：V2.40 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -384,6 +384,22 @@
                 <button id="t3-btn-crosshair-hide" onclick="t3SetCrosshair(false)" class="btn btn-primary text-xs">隱藏</button>
               </div>
             </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">組合線寬</div>
+              <div class="flex items-center gap-1">
+                <button onclick="t3AdjLineWidth(-0.5)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">−</button>
+                <span id="t3-line-width-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">2.0</span>
+                <button onclick="t3AdjLineWidth(0.5)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">+</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">圖示大小</div>
+              <div class="flex items-center gap-1">
+                <button onclick="t3AdjPointSize(-1)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">−</button>
+                <span id="t3-point-size-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">2</span>
+                <button onclick="t3AdjPointSize(1)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">+</button>
+              </div>
+            </div>
             <button id="t3-btn-reload" class="btn text-xs" style="align-self:flex-end;">重新載入</button>
           </div>
           <!-- Date bar -->
@@ -400,12 +416,14 @@
               <div class="text-xs text-slate-500 mb-1">快速選擇</div>
               <div class="flex gap-1 flex-wrap">
                 <button class="qbtn" onclick="t3SetQuick(30)">近30天</button>
+                <button class="qbtn" onclick="t3SetQuick(60)">近60天</button>
                 <button class="qbtn" onclick="t3SetQuick(90)">近90天</button>
                 <button class="qbtn" onclick="t3SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t3SetQuick(365)">近1年</button>
                 <button class="qbtn" onclick="t3SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t3SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t3SetQuick(365*5)">近5年</button>
+                <button class="qbtn" onclick="t3SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t3SetQuickFull()">全部</button>
               </div>
             </div>
@@ -680,6 +698,7 @@
                 <button class="qbtn" onclick="t4SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t4SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t4SetQuick(365*5)">近5年</button>
+                <button class="qbtn" onclick="t4SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t4SetQuickFull()">全部</button>
               </div>
             </div>
@@ -788,12 +807,14 @@
               <div class="text-xs text-slate-500 mb-1">快速選擇</div>
               <div class="flex gap-1 flex-wrap">
                 <button class="qbtn" onclick="t5SetQuick(30)">近30天</button>
+                <button class="qbtn" onclick="t5SetQuick(60)">近60天</button>
                 <button class="qbtn" onclick="t5SetQuick(90)">近90天</button>
                 <button class="qbtn" onclick="t5SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t5SetQuick(365)">近1年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*5)">近5年</button>
+                <button class="qbtn" onclick="t5SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t5SetQuickFull()">全部</button>
               </div>
             </div>
@@ -1082,10 +1103,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.39  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.40  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.39 (整合版)';
+const APP_VERSION = 'V2.40 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1203,6 +1224,8 @@ let state = {
   t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
+  t3_lineWidth: 2,          // Tab3 組合線粗細（預設2）
+  t3_pointSize: 2,          // Tab3 折線圖示大小（預設2）
   t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
   t3_showCrosshair: false,  // 十字虛線（預設隱藏）
   t3AxisRange: { yMin:'', yMax:'', yl2Min:'', yl2Max:'', yl3Min:'', yl3Max:'', y2Min:'', y2Max:'' },  // Tab3 軸刻度自訂
@@ -3345,6 +3368,67 @@ function t3SetIncludeCashDiv(val){
   if(state.t3_loaded) t3Redraw();
 }
 
+// ── 繪製單枚立體金幣（canvas 2D）──────────────────────
+function t3DrawCoin(ctx, cx, baseY, coinW, coinH){
+  // coinW = 橢圓寬；coinH = 頂面橢圓短軸 / 側面高度
+  const rx = coinW / 2;
+
+  // 1. 側面（梯形漸層，深金色，左亮右暗）
+  const sideTop    = baseY - coinH;
+  const sideBot    = baseY;
+  const grad = ctx.createLinearGradient(cx-rx, 0, cx+rx, 0);
+  grad.addColorStop(0,   '#FFD700');
+  grad.addColorStop(0.25,'#FFC200');
+  grad.addColorStop(0.5, '#E6A800');
+  grad.addColorStop(0.75,'#C88000');
+  grad.addColorStop(1,   '#A06000');
+  ctx.beginPath();
+  ctx.ellipse(cx, sideBot,  rx, coinH*0.45, 0, 0, Math.PI);   // 底部半橢圓
+  ctx.ellipse(cx, sideTop,  rx, coinH*0.45, 0, Math.PI, 0);   // 頂部半橢圓
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // 2. 頂面橢圓（亮金色）
+  const topGrad = ctx.createRadialGradient(cx-rx*0.2, sideTop, 0, cx, sideTop, rx);
+  topGrad.addColorStop(0,   '#FFED80');
+  topGrad.addColorStop(0.5, '#FFD700');
+  topGrad.addColorStop(1,   '#E6A800');
+  ctx.beginPath();
+  ctx.ellipse(cx, sideTop, rx, coinH*0.45, 0, 0, Math.PI*2);
+  ctx.fillStyle = topGrad;
+  ctx.fill();
+
+  // 3. 頂面紋路：淺色小橢圓（模擬銅板紋）
+  ctx.beginPath();
+  ctx.ellipse(cx, sideTop, rx*0.65, coinH*0.3, 0, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,180,0.5)';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  // 4. 頂面亮點（高光）
+  ctx.beginPath();
+  ctx.ellipse(cx-rx*0.25, sideTop-coinH*0.1, rx*0.25, coinH*0.15, -0.3, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,220,0.45)';
+  ctx.fill();
+}
+
+// ── Tab3 線寬調整 ────────────────────────────────────
+function t3AdjLineWidth(delta){
+  state.t3_lineWidth = Math.max(0.5, Math.min(8, parseFloat(((state.t3_lineWidth||2)+delta).toFixed(1))));
+  const lbl = document.getElementById('t3-line-width-label');
+  if(lbl) lbl.textContent = state.t3_lineWidth.toFixed(1);
+  if(state.t3_loaded) t3Redraw();
+}
+
+// ── Tab3 圖示大小調整 ────────────────────────────────
+function t3AdjPointSize(delta){
+  state.t3_pointSize = Math.max(0, Math.min(12, (state.t3_pointSize||2)+delta));
+  const lbl = document.getElementById('t3-point-size-label');
+  if(lbl) lbl.textContent = state.t3_pointSize;
+  if(state.t3_loaded) t3Redraw();
+}
+
 function t3SetShowDivCurve(val){
   state.t3_showDivCurve = val;
   document.getElementById('t3-btn-divcurve-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
@@ -3650,14 +3734,16 @@ function t3Redraw(){
   const FILL_COLORS = ['rgba(24,95,165,0.07)','rgba(29,158,117,0.07)','rgba(216,90,48,0.07)',
     'rgba(155,89,182,0.07)','rgba(186,117,23,0.07)','rgba(153,53,86,0.07)'];
 
+  const t3lw = state.t3_lineWidth || 2;
+  const t3ps = state.t3_pointSize || 2;
   const datasets = seriesList.map((sr,i)=>({
     label: sr.key,
     data: sr.vals,
     borderColor: sr.color,
     backgroundColor: FILL_COLORS[i % FILL_COLORS.length],
-    borderWidth: 2,
-    pointRadius: 2,
-    pointHoverRadius: 6,
+    borderWidth: t3lw,
+    pointRadius: t3ps,
+    pointHoverRadius: Math.max(t3ps+3, 6),
     fill: seriesList.length === 1,
     tension: 0.3,
     hidden: state.t3VisMap[sr.key] === false,
@@ -3692,23 +3778,9 @@ function t3Redraw(){
       });
     });
 
-    // 預先建立 💰 emoji 的 Image 物件，供 Chart.js 的 pointStyle 使用
-    if(!window._t3MoneyImg){
-      const sz = 28;
-      const oc = document.createElement('canvas');
-      oc.width = sz; oc.height = sz;
-      const cx = oc.getContext('2d');
-      cx.font = `${sz-2}px serif`;
-      cx.textAlign = 'center';
-      cx.textBaseline = 'middle';
-      cx.fillText('💰', sz/2, sz/2);
-      window._t3MoneyImg = new Image();
-      window._t3MoneyImg.src = oc.toDataURL();
-    }
-
+    // 建立隱形 scatter dataset 供 tooltip/hitTest 使用（不顯示，以 plugin 手繪金幣）
     seriesList.forEach(sr=>{
       if(!sr.cashDivSnap) return;
-      // 計算每日新增配息（累計差值，只有配息日才 > 0）
       const scatterData = dates.map((date,di)=>{
         const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
         const cdPrev = di>0 ? (sr.cashDivSnap[dates[di-1]] || {total_ntd:0}) : {total_ntd:0};
@@ -3719,14 +3791,16 @@ function t3Redraw(){
         type: 'scatter',
         label: `${sr.key} 配息`,
         data: scatterData,
-        pointStyle: window._t3MoneyImg,
-        pointRadius: 18,
-        pointHoverRadius: 24,
-        hitRadius: 30,       // 滑鼠在符號 30px 內即可觸發 tooltip
+        pointStyle: 'circle',
+        pointRadius: 0,         // 不顯示原生點
+        pointHoverRadius: 0,
+        hitRadius: 30,
         showLine: false,
         yAxisID: 'yLeft2',
         hidden: state.t3VisMap[`${sr.key} 配息`] === false,
-        divAmounts: scatterData,
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
+        _coinData: { amounts: scatterData, color: sr.color },
       });
     });
   }
@@ -3785,7 +3859,35 @@ function t3Redraw(){
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display: false },
-        tooltip:{ enabled:false, external: ctx=>t3ShowTip(ctx, dates, seriesList) }
+        tooltip:{ enabled:false, external: ctx=>t3ShowTip(ctx, dates, seriesList) },
+        t3CoinPlugin: {
+          afterDraw(chart){
+            if(!state.t3_showDivBars) return;
+            const cx2   = chart.ctx;
+            const area  = chart.chartArea;
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.yLeft2;
+            if(!yScale || !yScale.display) return;
+            const zeroPx = yScale.getPixelForValue(0);
+            chart.data.datasets.forEach(ds=>{
+              if(!ds._coinData || !ds.label.endsWith(' 配息')) return;
+              if(state.t3VisMap[ds.label] === false) return;
+              const { amounts } = ds._coinData;
+              const maxAmt = Math.max(...amounts.filter(v=>v!==null&&v>0));
+              if(!maxAmt) return;
+              const MAX_COINS=10, CW=22, CH=5, STEP=6;
+              amounts.forEach((amt,di)=>{
+                if(!amt) return;
+                const xPx = xScale.getPixelForValue(di);
+                if(xPx < area.left-2 || xPx > area.right+2) return;
+                const coins = Math.max(1, Math.round((amt/maxAmt)*MAX_COINS));
+                cx2.save();
+                for(let c=0; c<coins; c++) t3DrawCoin(cx2, xPx, zeroPx - c*STEP, CW, CH);
+                cx2.restore();
+              });
+            });
+          }
+        }
       },
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t3XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
