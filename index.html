@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.42 (整合版)
+     版本：V2.43 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1131,10 +1131,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.42  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.43  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.42 (整合版)';
+const APP_VERSION = 'V2.43 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3934,43 +3934,48 @@ function t3Redraw(){
     return date;  // 顯示 YYYY/MM/DD（即原始格式）
   };
 
+  // 定義金幣 plugin（需在 new Chart 的 plugins 陣列中傳入才有效）
+  const _t3CoinPlugin = {
+    id: 't3CoinPlugin',
+    afterDraw(chart){
+      if(!state.t3_showDivBars) return;
+      const cx2    = chart.ctx;
+      const area   = chart.chartArea;
+      const xScale = chart.scales.x;
+      const yScale = chart.scales.yLeft2;
+      if(!yScale || !yScale.display) return;
+      const zeroPx = yScale.getPixelForValue(0);
+      chart.data.datasets.forEach(ds=>{
+        if(!ds._coinData || !ds.label.endsWith(' 配息')) return;
+        if(state.t3VisMap[ds.label] === false) return;
+        const { amounts } = ds._coinData;
+        const validAmts = amounts.filter(v=>v!==null&&v>0);
+        if(!validAmts.length) return;
+        const maxAmt = Math.max(...validAmts);
+        const MAX_COINS=10, CW=22, CH=5, STEP=6;
+        amounts.forEach((amt,di)=>{
+          if(!amt) return;
+          const xPx = xScale.getPixelForValue(di);
+          if(xPx < area.left-2 || xPx > area.right+2) return;
+          const coins = Math.max(1, Math.round((amt/maxAmt)*MAX_COINS));
+          cx2.save();
+          for(let c=0; c<coins; c++) t3DrawCoin(cx2, xPx, zeroPx - c*STEP, CW, CH);
+          cx2.restore();
+        });
+      });
+    }
+  };
+
   state.t3_chart = new Chart(document.getElementById('t3-chart'), {
     type: 'line',
     data: { labels: dates.map((_,i)=>i), datasets },
+    plugins: [_t3CoinPlugin],
     options:{
       responsive: true, maintainAspectRatio: false,
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display: false },
-        tooltip:{ enabled:false, external: ctx=>t3ShowTip(ctx, dates, seriesList) },
-        t3CoinPlugin: {
-          afterDraw(chart){
-            if(!state.t3_showDivBars) return;
-            const cx2   = chart.ctx;
-            const area  = chart.chartArea;
-            const xScale = chart.scales.x;
-            const yScale = chart.scales.yLeft2;
-            if(!yScale || !yScale.display) return;
-            const zeroPx = yScale.getPixelForValue(0);
-            chart.data.datasets.forEach(ds=>{
-              if(!ds._coinData || !ds.label.endsWith(' 配息')) return;
-              if(state.t3VisMap[ds.label] === false) return;
-              const { amounts } = ds._coinData;
-              const maxAmt = Math.max(...amounts.filter(v=>v!==null&&v>0));
-              if(!maxAmt) return;
-              const MAX_COINS=10, CW=22, CH=5, STEP=6;
-              amounts.forEach((amt,di)=>{
-                if(!amt) return;
-                const xPx = xScale.getPixelForValue(di);
-                if(xPx < area.left-2 || xPx > area.right+2) return;
-                const coins = Math.max(1, Math.round((amt/maxAmt)*MAX_COINS));
-                cx2.save();
-                for(let c=0; c<coins; c++) t3DrawCoin(cx2, xPx, zeroPx - c*STEP, CW, CH);
-                cx2.restore();
-              });
-            });
-          }
-        }
+        tooltip:{ enabled:false, external: ctx=>t3ShowTip(ctx, dates, seriesList) }
       },
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t3XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
