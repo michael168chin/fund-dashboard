@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.40 (整合版)
+     版本：V2.41 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -378,6 +378,13 @@
               </div>
             </div>
             <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">移動明細</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-tip-show" onclick="t3SetShowTip(true)" class="btn btn-primary text-xs">顯示</button>
+                <button id="t3-btn-tip-hide" onclick="t3SetShowTip(false)" class="btn text-xs">隱藏</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
               <div class="text-xs text-slate-500">十字線</div>
               <div class="flex gap-1">
                 <button id="t3-btn-crosshair-show" onclick="t3SetCrosshair(true)" class="btn text-xs">顯示</button>
@@ -702,6 +709,13 @@
                 <button class="qbtn" onclick="t4SetQuickFull()">全部</button>
               </div>
             </div>
+            <div class="flex flex-col gap-1.5 ml-2">
+              <div class="text-xs text-slate-500">移動明細</div>
+              <div class="flex gap-1">
+                <button id="t4-btn-tip-show" onclick="t4SetShowTip(true)" class="btn btn-primary text-xs">顯示</button>
+                <button id="t4-btn-tip-hide" onclick="t4SetShowTip(false)" class="btn text-xs">隱藏</button>
+              </div>
+            </div>
           </div>
           <!-- Chart -->
           <div style="position:relative;width:100%;height:400px;">
@@ -816,6 +830,13 @@
                 <button class="qbtn" onclick="t5SetQuick(365*5)">近5年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t5SetQuickFull()">全部</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5 ml-2">
+              <div class="text-xs text-slate-500">移動明細</div>
+              <div class="flex gap-1">
+                <button id="t5-btn-tip-show" onclick="t5SetShowTip(true)" class="btn btn-primary text-xs">顯示</button>
+                <button id="t5-btn-tip-hide" onclick="t5SetShowTip(false)" class="btn text-xs">隱藏</button>
               </div>
             </div>
 
@@ -1103,10 +1124,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.40  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.41  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.40 (整合版)';
+const APP_VERSION = 'V2.41 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1224,6 +1245,9 @@ let state = {
   t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
+  t3_showTip: true,         // Tab3 滑鼠移動明細（預設顯示）
+  t4_showTip: true,         // Tab4 滑鼠移動明細（預設顯示）
+  t5_showTip: true,         // Tab5 滑鼠移動明細（預設顯示）
   t3_lineWidth: 2,          // Tab3 組合線粗細（預設2）
   t3_pointSize: 2,          // Tab3 折線圖示大小（預設2）
   t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
@@ -2875,6 +2899,7 @@ function t4Redraw(){
 function t4ShowTip(ctx, dates, datasets){
   const box = document.getElementById('t4-tip');
   if(ctx.tooltip.opacity===0){ if(!state.t4_tipLocked) box.style.display='none'; return; }
+  if(!state.t4_showTip){ box.style.display='none'; return; }
   if(state.t4_tipLocked) return;
   const idx  = ctx.tooltip.dataPoints[0].dataIndex;
   const date = dates[idx];
@@ -3429,6 +3454,25 @@ function t3AdjPointSize(delta){
   if(state.t3_loaded) t3Redraw();
 }
 
+function t3SetShowTip(val){
+  state.t3_showTip = val;
+  document.getElementById('t3-btn-tip-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-tip-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){ const b=document.getElementById('tip'); if(b) b.style.display='none'; state.t3_tipLocked=false; }
+}
+function t4SetShowTip(val){
+  state.t4_showTip = val;
+  document.getElementById('t4-btn-tip-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-tip-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){ const b=document.getElementById('t4-tip'); if(b) b.style.display='none'; state.t4_tipLocked=false; }
+}
+function t5SetShowTip(val){
+  state.t5_showTip = val;
+  document.getElementById('t5-btn-tip-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t5-btn-tip-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){ const b=document.getElementById('t5-tip'); if(b) b.style.display='none'; state.t5_tipLocked=false; }
+}
+
 function t3SetShowDivCurve(val){
   state.t3_showDivCurve = val;
   document.getElementById('t3-btn-divcurve-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
@@ -3954,6 +3998,7 @@ function t3Redraw(){
 function t3ShowTip(ctx, dates, seriesList){
   const box = document.getElementById('tip');
   if(ctx.tooltip.opacity===0){ if(!state.t3_tipLocked) box.style.display='none'; return; }
+  if(!state.t3_showTip){ box.style.display='none'; return; }
   if(state.t3_tipLocked) return;
   const dps = ctx.tooltip.dataPoints;
   // 若點到 💰 配息散點，顯示配息金額
@@ -5411,6 +5456,7 @@ const T5_MARKER_DEF = {
 function t5ShowTip(ctx, dates, datasets){
   const box=document.getElementById('t5-tip');
   if(ctx.tooltip.opacity===0){ if(!state.t5_tipLocked) box.style.display='none'; return; }
+  if(!state.t5_showTip){ box.style.display='none'; return; }
   if(state.t5_tipLocked) return;
 
   const dps   = ctx.tooltip.dataPoints;
