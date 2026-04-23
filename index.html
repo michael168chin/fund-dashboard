@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.41 (整合版)
+     版本：V2.42 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -485,6 +485,13 @@
                 <div class="flex gap-1">
                   <button id="t4-btn-orig" onclick="t4SetFxMode('orig')" class="btn btn-primary text-xs">原幣</button>
                   <button id="t4-btn-fx" onclick="t4SetFxMode('fx')" class="btn text-xs">反映匯率</button>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <div class="text-xs text-slate-500">Y 軸</div>
+                <div class="flex gap-1">
+                  <button id="t4-btn-ymode-pct" onclick="t4SetYMode('pct')" class="btn btn-primary text-xs">相對%</button>
+                  <button id="t4-btn-ymode-price" onclick="t4SetYMode('price')" class="btn text-xs">價格</button>
                 </div>
               </div>
               <div class="flex flex-col gap-1.5">
@@ -1124,10 +1131,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.41  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.42  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.41 (整合版)';
+const APP_VERSION = 'V2.42 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1257,6 +1264,7 @@ let state = {
   // Tab4
   t4_loaded: false,
   t4_fxMode: 'orig',
+  t4_yMode: 'pct',   // Tab4 Y 軸模式：'pct'=相對% / 'price'=原始價格
   t4_dateLocked: false,
   t4_tipLocked: false,
   t4_chart: null,
@@ -2525,6 +2533,13 @@ function t4ToggleLock(){
   }
 }
 
+function t4SetYMode(mode){
+  state.t4_yMode = mode;
+  document.getElementById('t4-btn-ymode-pct').className   = mode==='pct'   ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-ymode-price').className = mode==='price' ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t4_loaded) t4Redraw();
+}
+
 function t4SetFxMode(mode){
   state.t4_fxMode = mode;
   document.getElementById('t4-btn-orig').className = mode==='orig'?'btn btn-primary text-xs':'btn text-xs';
@@ -2761,9 +2776,13 @@ function t4Redraw(){
       const baseIdx = series.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx===-1) return;
       const base = series[baseIdx];
-      const data = series.map((v,i)=>
-        i<baseIdx ? null : (v===null||v===undefined) ? null : parseFloat(((v/base)*100).toFixed(4))
-      );
+      const isPriceMode = state.t4_yMode === 'price';
+      const data = series.map((v,i)=>{
+        if(i<baseIdx||v===null||v===undefined) return null;
+        return isPriceMode
+          ? parseFloat(v.toFixed(4))                       // 原始價格
+          : parseFloat(((v/base)*100).toFixed(4));         // 相對指數
+      });
       // 每個成份標的：不同虛線 + 不同端點，間隔顯示端點避免過密
       const dashIdx   = fi % DASH_PATTERNS.length;
       const ptStyle   = POINT_STYLES[(gi * 3 + fi) % POINT_STYLES.length];
@@ -2800,9 +2819,13 @@ function t4Redraw(){
       const baseIdx = rawSeries.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx<0) return;
       const base = rawSeries[baseIdx];
-      const idxSeries = rawSeries.map((v,i)=>
-        i<baseIdx?null:(v===null?null:parseFloat(((v/base)*100).toFixed(4)))
-      );
+      const isPriceModeEma = state.t4_yMode === 'price';
+      const idxSeries = rawSeries.map((v,i)=>{
+        if(i<baseIdx||v===null) return null;
+        return isPriceModeEma
+          ? parseFloat(v.toFixed(4))
+          : parseFloat(((v/base)*100).toFixed(4));
+      });
       const emaSeries = calcEMA(idxSeries, period);
       const emaLabel  = `${T4_GROUP_NAMES[gi]}：EMA${period}(${t3FundLabel(fund,'t4')})`;
       datasets.push({
@@ -2817,9 +2840,9 @@ function t4Redraw(){
       });
     });
 
-    // 組合加權曲線（粗實線，無端點標記）
+    // 組合加權曲線：價格模式下不顯示（各標的幣別/面額不同，加權無意義）
     const totW = sel.reduce((s,v)=>s+(parseFloat(g.weights[v])||0), 0);
-    if(sel.length > 1 || totW > 0){
+    if((sel.length > 1 || totW > 0) && state.t4_yMode !== 'price'){
       const groupData = t4CalcGroupSeries(gi, allDates);
       if(groupData){
         const groupLabel = `${T4_GROUP_NAMES[gi]} 組合`;
@@ -2887,9 +2910,18 @@ function t4Redraw(){
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t4XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
         y:{
-          ticks:{ font:{size:11},color:'#888', callback:v=>`${v.toFixed(1)}%` },
+          ticks:{ font:{size:11},color:'#888',
+            callback: state.t4_yMode==='price'
+              ? v=>{ if(v>=1e4) return `${Math.round(v/1e3)}K`; return v.toFixed(2); }
+              : v=>`${v.toFixed(1)}%`
+          },
           grid:{ color:'rgba(0,0,0,0.05)' },
-          title:{ display:true, text:'相對起始日（%）', font:{size:11}, color:'#888' }
+          title:{ display:true,
+            text: state.t4_yMode==='price'
+              ? (state.t4_fxMode==='fx' ? '價格（NT$）' : '價格（原幣）')
+              : '相對起始日（%）',
+            font:{size:11}, color:'#888'
+          }
         }
       }
     }
@@ -2915,9 +2947,16 @@ function t4ShowTip(ctx, dates, datasets){
       if(ds.isEma) return;  // EMA 線不顯示在 tooltip
       const val = ds.data[idx];
       if(val===null||val===undefined) return;
-      const diff   = val - 100;
-      const diffStr= (diff>=0?'+':'')+diff.toFixed(2)+'%';
-      const col    = diff>=0?'#1D9E75':'#c0392b';
+      const isPriceModeTip = state.t4_yMode === 'price';
+      let diffStr, col;
+      if(isPriceModeTip){
+        diffStr = val>=1e4 ? val.toLocaleString('en-US',{maximumFractionDigits:2}) : val.toFixed(4);
+        col = '#475569';
+      } else {
+        const diff = val - 100;
+        diffStr = (diff>=0?'+':'')+diff.toFixed(2)+'%';
+        col = diff>=0?'#1D9E75':'#c0392b';
+      }
       const bold   = ds.isGroup ? 'font-weight:600;' : '';
       // 配置比例
       let weightStr = '';
