@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.45 (整合版)
+     版本：V2.47 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1131,10 +1131,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.45  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.47  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.45 (整合版)';
+const APP_VERSION = 'V2.47 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3874,13 +3874,15 @@ function t3Redraw(){
         type: 'scatter',
         label: `${sr.key} 配息`,
         data: scatterData,
-        pointStyle: window._t3MoneyImg,
-        pointRadius: 18,
-        pointHoverRadius: 24,
+        pointStyle: 'circle',
+        pointRadius: 0,
+        pointHoverRadius: 0,
         hitRadius: 30,
         showLine: false,
         yAxisID: 'yLeft2',
         hidden: state.t3VisMap[`${sr.key} 配息`] === false,
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
       });
     });
   }
@@ -3931,25 +3933,52 @@ function t3Redraw(){
     return date;  // 顯示 YYYY/MM/DD（即原始格式）
   };
 
-  // 💰 emoji Image：預先建立供 Chart.js pointStyle 使用
-  if(!window._t3MoneyImg || !window._t3MoneyImg.complete){
-    const sz = 32;
-    const oc = document.createElement('canvas');
-    oc.width = sz; oc.height = sz;
-    const cx2 = oc.getContext('2d');
-    cx2.font = `${sz-2}px serif`;
-    cx2.textAlign = 'center';
-    cx2.textBaseline = 'middle';
-    cx2.fillText('💰', sz/2, sz/2);
-    window._t3MoneyImg = new Image();
-    window._t3MoneyImg.src = oc.toDataURL();
-  }
-  const _t3CoinPlugin = null;  // 不使用自訂 plugin
+  // 金幣 plugin：用 closure + chartArea.bottom 作基線，確保在可見範圍內
+  const _coinAmountsByGroup = seriesList.map(sr=>{
+    if(!sr.cashDivSnap) return { key:sr.key, color:sr.color, amounts:[] };
+    const amounts = dates.map((date,di)=>{
+      const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
+      const cdPrev = di>0?(sr.cashDivSnap[dates[di-1]]||{total_ntd:0}):{total_ntd:0};
+      const delta  = cd.total_ntd - cdPrev.total_ntd;
+      return delta > 0 ? delta : null;
+    });
+    return { key:sr.key, color:sr.color, amounts };
+  });
+  const _allValidAmts = _coinAmountsByGroup.flatMap(g=>g.amounts.filter(v=>v!==null&&v>0));
+  const _coinGlobalMax = _allValidAmts.length ? Math.max(..._allValidAmts) : 0;
+
+  const _t3CoinPlugin = {
+    id: 't3CoinPlugin',
+    beforeDatasetsDraw(chart){
+      if(!state.t3_showDivBars || !_coinGlobalMax) return;
+      const cx2  = chart.ctx;
+      const area = chart.chartArea;
+      const xScale = chart.scales.x;
+      // 直接用 chartArea.bottom 作基線，100% 確保在可見範圍內
+      const baseY  = area.bottom;
+      const MAX_COINS=10, CW=20, CH=4, STEP=5;
+
+      _coinAmountsByGroup.forEach(gd=>{
+        if(state.t3VisMap[`${gd.key} 配息`]===false) return;
+        gd.amounts.forEach((amt,di)=>{
+          if(!amt) return;
+          const xPx = xScale.getPixelForValue(di);
+          if(xPx < area.left || xPx > area.right) return;
+          const coins = Math.max(1, Math.round((amt/_coinGlobalMax)*MAX_COINS));
+          cx2.save();
+          for(let c=0; c<coins; c++){
+            t3DrawCoin(cx2, xPx, baseY - c*STEP, CW, CH);
+          }
+          cx2.restore();
+        });
+      });
+    }
+  };
 
   state.t3_chart = new Chart(document.getElementById('t3-chart'), {
     type: 'line',
     data: { labels: dates.map((_,i)=>i), datasets },
-    plugins: [],
+    plugins: [_t3CoinPlugin],
     options:{
       responsive: true, maintainAspectRatio: false,
       interaction:{ mode:'index', intersect:false },
