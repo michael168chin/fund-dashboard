@@ -37,7 +37,7 @@
   <!-- ▼ 版次顯示列（程式碼最前端） -->
   <div class="max-w-5xl mx-auto mb-3 flex items-center gap-2 px-1">
     <span class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">v1.5.7</span>
+    <span id="version-badge" class="text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">v1.5.8</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -49,7 +49,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.5.7';
+    const APP_VERSION = 'v1.5.8';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -252,8 +252,39 @@
         if (!manualText.trim()) { alert('請先貼上內容'); return; }
         if (activeTab === 'ntdmd-div-manual') parseNTDMDDividendData(manualText);
         else if (activeTab === 'dividend-manual') parseDividendData(manualText);
+        else if (activeTab === 'twse-index') parseTWSEIndexData(manualText);
         else if (activeTab === 'fund-manual' || activeTab === 'custom-target') parseFundData(manualText);
         else parseExchangeRateData(manualText);
+      };
+
+      // 台股加權指數解析（民國年轉西元年，取第1欄日期與第5欄指數）
+      const parseTWSEIndexData = (text) => {
+        let indexList = [];
+        const cleanText = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        setDetectedTargetCode('TAIEX');
+        setDetectedTargetName('發行量加權股價指數');
+
+        // 證交所格式：民國日期(115/04/01) + 成交股數 + 成交金額 + 成交筆數 + 加權指數 + 漲跌點
+        // 數字欄位有千分位逗號，需一併處理
+        const regex = /(\d{2,3}\/\d{2}\/\d{2})\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+\.\d+)\s+([+-]?[\d,]+\.\d+)/g;
+        let match;
+        while ((match = regex.exec(cleanText)) !== null) {
+          const rocDate = match[1];          // e.g. 115/04/01
+          const parts = rocDate.split('/');
+          const year = parseInt(parts[0], 10) + 1911;  // 民國轉西元
+          const adDate = `${year}/${parts[1]}/${parts[2]}`;
+          const indexVal = match[5].replace(/,/g, ''); // 第5欄：加權指數
+          indexList.push({ date: adDate, value: indexVal });
+        }
+
+        if (indexList.length > 0) {
+          setFetchedData(indexList[0]);
+          setHistoryRates(indexList);
+          updateDefaultDateRange(indexList);
+          setFetchError('');
+        } else {
+          setFetchError('無法解析台股指數資料，請確認貼上內容是否包含正確的成交資訊表格。');
+        }
       };
 
       const filterData = useMemo(() => {
@@ -314,8 +345,10 @@
         if (!finalProcessedRates.length) return;
         setIsWriting(true);
         try {
-          const targetHeader = activeTab === 'fund-manual' ? 'NTDMD0020' : 
-                               activeTab === 'custom-target' ? customTargetCode.trim().toUpperCase() : '美元兌新台幣匯率';
+          const targetHeader = activeTab === 'fund-manual'   ? 'NTDMD0020' :
+                               activeTab === 'custom-target' ? customTargetCode.trim().toUpperCase() :
+                               activeTab === 'twse-index'    ? '發行量加權股價指數' :
+                                                               '美元兌新台幣匯率';
           for (const rate of finalProcessedRates) {
             const val = rate.value || rate.buy;
             const url = `${GAS_URL}?type=write&date=${encodeURIComponent(rate.date)}&value=${encodeURIComponent(val)}&header=${encodeURIComponent(targetHeader)}`;
@@ -354,6 +387,7 @@
               </button>
               <button onClick={() => switchTab('custom-target')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'custom-target' ? 'border-emerald-600 text-emerald-600 bg-emerald-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>自訂標的</button>
               <button onClick={() => switchTab('dividend-manual')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'dividend-manual' ? 'border-rose-600 text-rose-600 bg-rose-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>基金配息全析</button>
+              <button onClick={() => switchTab('twse-index')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'twse-index' ? 'border-amber-600 text-amber-600 bg-amber-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>台股指數</button>
             </div>
 
             <div className="mb-8">
@@ -368,6 +402,7 @@
                           activeTab.includes('div')        ? "https://es.allianz.com.tw/customer/product/target/interest" :
                           activeTab === 'manual'           ? "https://es.allianz.com.tw/customer/product/investment/VAS/exchange-rate" :
                           activeTab === 'fund-manual'      ? "https://es.allianz.com.tw/customer/product/investment/VUBF/target-information/NTDMD0020/FUND_PRICE" :
+                          activeTab === 'twse-index'       ? "https://www.twse.com.tw/zh/trading/historical/fmtqik.html" :
                                                              "https://es.allianz.com.tw/customer/product/target/fund"
                         } 
                         target="_blank" 
@@ -377,6 +412,7 @@
                          activeTab.includes('div')        ? '安聯人壽配息專區' :
                          activeTab === 'manual'           ? '前往匯率網頁' :
                          activeTab === 'fund-manual'      ? '前往淨值網頁' :
+                         activeTab === 'twse-index'       ? '前往證交所網頁' :
                                                             '前往連結'} <Icons.External />
                       </a>
                     </div>
@@ -510,6 +546,11 @@
                                 <th className="px-4 py-4 whitespace-nowrap">再投資日</th>
                                 <th className="px-4 py-4 whitespace-nowrap text-emerald-600 font-black">分配單位</th>
                               </tr>
+                            ) : activeTab === 'twse-index' ? (
+                              <tr>
+                                <th className="px-4 py-4 whitespace-nowrap">日期（西元）</th>
+                                <th className="px-4 py-4 whitespace-nowrap text-amber-600 font-black">發行量加權股價指數</th>
+                              </tr>
                             ) : (
                               <tr>
                                 <th className="px-4 py-4">日期</th>
@@ -537,6 +578,11 @@
                                     <td className="px-4 py-4 font-black text-rose-600 text-sm">{r.divAmt}</td>
                                     <td className="px-4 py-4 text-gray-500">{r.reinvestDate}</td>
                                     <td className="px-4 py-4 font-black text-emerald-600 text-sm">{r.distUnits}</td>
+                                  </>
+                                ) : activeTab === 'twse-index' ? (
+                                  <>
+                                    <td className="px-4 py-4 font-bold text-gray-800">{r.date}</td>
+                                    <td className="px-4 py-4 font-black text-amber-600 text-sm">{r.value}</td>
                                   </>
                                 ) : (
                                   <>
