@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.47 (整合版)
+     版本：V2.51 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -395,7 +395,7 @@
               <div class="text-xs text-slate-500">組合線寬</div>
               <div class="flex items-center gap-1">
                 <button onclick="t3AdjLineWidth(-0.5)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">−</button>
-                <span id="t3-line-width-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">2.0</span>
+                <span id="t3-line-width-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">1.5</span>
                 <button onclick="t3AdjLineWidth(0.5)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">+</button>
               </div>
             </div>
@@ -403,7 +403,7 @@
               <div class="text-xs text-slate-500">圖示大小</div>
               <div class="flex items-center gap-1">
                 <button onclick="t3AdjPointSize(-1)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">−</button>
-                <span id="t3-point-size-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">2</span>
+                <span id="t3-point-size-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">1</span>
                 <button onclick="t3AdjPointSize(1)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">+</button>
               </div>
             </div>
@@ -1131,10 +1131,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.47  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.51  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.47 (整合版)';
+const APP_VERSION = 'V2.51 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1255,8 +1255,8 @@ let state = {
   t3_showTip: true,         // Tab3 滑鼠移動明細（預設顯示）
   t4_showTip: true,         // Tab4 滑鼠移動明細（預設顯示）
   t5_showTip: true,         // Tab5 滑鼠移動明細（預設顯示）
-  t3_lineWidth: 2,          // Tab3 組合線粗細（預設2）
-  t3_pointSize: 2,          // Tab3 折線圖示大小（預設2）
+  t3_lineWidth: 1.5,        // Tab3 組合線粗細（預設1.5）
+  t3_pointSize: 1,          // Tab3 折線圖示大小（預設1）
   t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
   t3_showCrosshair: false,  // 十字虛線（預設隱藏）
   t3AxisRange: { yMin:'', yMax:'', yl2Min:'', yl2Max:'', yl3Min:'', yl3Max:'', y2Min:'', y2Max:'' },  // Tab3 軸刻度自訂
@@ -1858,7 +1858,7 @@ function cellHTML(f, key, tab){
 
 function nameCell(f){
   const dot=typeof f.nav==='number'&&f.hasDividends?'bg-green-500':typeof f.nav==='number'?'bg-amber-400':(f.urlNav||f.urlDiv)?'bg-slate-300 animate-pulse':'bg-red-300';
-  const nm=f.urlInfo?`<a href="${f.urlInfo}" target="_blank" class="text-blue-600 hover:underline text-xs leading-snug">${f.name} ↗</a>`:`<span class="text-slate-500 text-xs leading-snug">${f.name}</span>`;
+  const nm=f.urlNav?`<a href="${f.urlNav}" target="_blank" class="text-blue-600 hover:underline text-xs leading-snug">${f.name} ↗</a>`:`<span class="text-slate-500 text-xs leading-snug">${f.name}</span>`;
   return `<div class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${dot}"></div><div><div class="font-medium text-slate-900 text-xs">${f.code}</div>${nm}</div></div>`;
 }
 function navCell(f,mn){
@@ -2931,7 +2931,7 @@ function t4Redraw(){
 function t4ShowTip(ctx, dates, datasets){
   const box = document.getElementById('t4-tip');
   if(ctx.tooltip.opacity===0){ if(!state.t4_tipLocked) box.style.display='none'; return; }
-  if(!state.t4_showTip){ box.style.display='none'; return; }
+  if(!state.t4_showTip && !state.t4_tipLocked){ box.style.display='none'; return; }
   if(state.t4_tipLocked) return;
   const idx  = ctx.tooltip.dataPoints[0].dataIndex;
   const date = dates[idx];
@@ -3098,6 +3098,37 @@ function t4SyncGroupBtns(){
       bf.style.opacity=allH?'0.4':'1'; bf.style.textDecoration=allH?'line-through':'none';
     }
   });
+
+  // 點擊顯示明細（移動明細隱藏模式用）
+  (()=>{
+    const cvs = document.getElementById('t4-chart');
+    if(!cvs || cvs._tipClickBound) return;
+    cvs._tipClickBound = true;
+    cvs.addEventListener('click', e=>{
+      if(state.t4_showTip || !state.t4_chart) return;
+      const pts = state.t4_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      state.t4_tipLocked = false;
+      const _t4rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t4_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - _t4rect.left,
+          caretY: e.clientY - _t4rect.top,
+        },
+        chart: state.t4_chart
+      };
+      state.t4_showTip = true;
+      t4ShowTip(fakeCtx, allDates, datasets);
+      state.t4_showTip = false;
+      state.t4_tipLocked = true;
+    });
+  })();
 }
 
 function t4GroupToggleFundsVis(gi){
@@ -3813,6 +3844,37 @@ function t3Redraw(){
   t3RenderLegend(seriesList);
   t3InitSlider(dates, firstTxDate);
   t3BindCrosshair();
+  // 點擊顯示明細（移動明細隱藏模式用）
+  (()=>{
+    const cvs = document.getElementById('t3-chart');
+    if(!cvs || cvs._tipClickBound) return;
+    cvs._tipClickBound = true;
+    cvs.addEventListener('click', e=>{
+      if(state.t3_showTip || !state.t3_chart) return;
+      const pts = state.t3_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      // 直接呼叫 external tooltip 顯示函數
+      state.t3_tipLocked = false;
+      const _t3rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t3_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - _t3rect.left,
+          caretY: e.clientY - _t3rect.top,
+        },
+        chart: state.t3_chart
+      };
+      state.t3_showTip = true;          // 暫時開啟，讓 showTip 不被 guard 攔截
+      t3ShowTip(fakeCtx, dates, seriesList);
+      state.t3_showTip = false;         // 恢復關閉
+      state.t3_tipLocked = true;        // 鎖定讓 tooltip 不消失
+    });
+  })();
 
   const FILL_COLORS = ['rgba(24,95,165,0.07)','rgba(29,158,117,0.07)','rgba(216,90,48,0.07)',
     'rgba(155,89,182,0.07)','rgba(186,117,23,0.07)','rgba(153,53,86,0.07)'];
@@ -4051,7 +4113,7 @@ function t3Redraw(){
 function t3ShowTip(ctx, dates, seriesList){
   const box = document.getElementById('tip');
   if(ctx.tooltip.opacity===0){ if(!state.t3_tipLocked) box.style.display='none'; return; }
-  if(!state.t3_showTip){ box.style.display='none'; return; }
+  if(!state.t3_showTip && !state.t3_tipLocked){ box.style.display='none'; return; }
   if(state.t3_tipLocked) return;
   const dps = ctx.tooltip.dataPoints;
   // 若點到 💰 配息散點，顯示配息金額
@@ -4542,6 +4604,7 @@ function t3BindCrosshair(){
     const oc=document.getElementById('t3-crosshair');
     if(oc){ const cx=oc.getContext('2d'); cx.clearRect(0,0,oc.width,oc.height); }
   });
+  // （舊版 click handler 已移除，改由 _tipClickBound 版本處理）
 }
 
 // ── 軸範圍即時套用 ────────────────────────────────────
@@ -5476,6 +5539,36 @@ function t5Redraw(){
 
   // 初始化年度拉桿
   t5InitYearSlider(allDates);
+  // 點擊顯示明細（移動明細隱藏模式用）
+  (()=>{
+    const cvs = document.getElementById('t5-chart');
+    if(!cvs || cvs._tipClickBound) return;
+    cvs._tipClickBound = true;
+    cvs.addEventListener('click', e=>{
+      if(state.t5_showTip || !state.t5_chart) return;
+      const pts = state.t5_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      state.t5_tipLocked = false;
+      const _t5rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t5_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - _t5rect.left,
+          caretY: e.clientY - _t5rect.top,
+        },
+        chart: state.t5_chart
+      };
+      state.t5_showTip = true;
+      t5ShowTip(fakeCtx, allDates, datasets);
+      state.t5_showTip = false;
+      state.t5_tipLocked = true;
+    });
+  })();
 }
 
 function t5RenderCards(summaryData, dates){
@@ -5509,7 +5602,7 @@ const T5_MARKER_DEF = {
 function t5ShowTip(ctx, dates, datasets){
   const box=document.getElementById('t5-tip');
   if(ctx.tooltip.opacity===0){ if(!state.t5_tipLocked) box.style.display='none'; return; }
-  if(!state.t5_showTip){ box.style.display='none'; return; }
+  if(!state.t5_showTip && !state.t5_tipLocked){ box.style.display='none'; return; }
   if(state.t5_tipLocked) return;
 
   const dps   = ctx.tooltip.dataPoints;
