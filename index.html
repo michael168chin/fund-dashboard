@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.51 (整合版)
+     版本：V2.53 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1131,10 +1131,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.51  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.53  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.51 (整合版)';
+const APP_VERSION = 'V2.53 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1253,6 +1253,12 @@ let state = {
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
   t3_showTip: true,         // Tab3 滑鼠移動明細（預設顯示）
+  t3_curDates: [],          // t3Redraw 最新的 dates（供 click handler 使用）
+  t3_curSeries: [],         // t3Redraw 最新的 seriesList
+  t4_curDates: [],          // t4Redraw 最新的 allDates
+  t4_curDatasets: [],       // t4Redraw 最新的 datasets
+  t5_curDates: [],          // t5Redraw 最新的 allDates
+  t5_curDatasets: [],       // t5Redraw 最新的 datasets
   t4_showTip: true,         // Tab4 滑鼠移動明細（預設顯示）
   t5_showTip: true,         // Tab5 滑鼠移動明細（預設顯示）
   t3_lineWidth: 1.5,        // Tab3 組合線粗細（預設1.5）
@@ -2926,6 +2932,40 @@ function t4Redraw(){
       }
     }
   });
+  // 每次 Redraw 更新最新資料
+  state.t4_curDates    = allDates;
+  state.t4_curDatasets = datasets;
+  // 點擊顯示明細——每次 Redraw 重新綁定確保資料最新
+  (()=>{
+    const cvs = document.getElementById('t4-chart');
+    if(!cvs) return;
+    if(cvs._t4ClickHandler) cvs.removeEventListener('click', cvs._t4ClickHandler);
+    cvs._t4ClickHandler = e=>{
+      if(state.t4_showTip || !state.t4_chart) return;
+      const pts = state.t4_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      state.t4_tipLocked = false;
+      const rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t4_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - rect.left,
+          caretY: e.clientY - rect.top,
+        },
+        chart: state.t4_chart
+      };
+      state.t4_showTip = true;
+      t4ShowTip(fakeCtx, state.t4_curDates, state.t4_curDatasets);
+      state.t4_showTip = false;
+      state.t4_tipLocked = true;
+    };
+    cvs.addEventListener('click', cvs._t4ClickHandler);
+  })();
 }
 
 function t4ShowTip(ctx, dates, datasets){
@@ -3099,36 +3139,6 @@ function t4SyncGroupBtns(){
     }
   });
 
-  // 點擊顯示明細（移動明細隱藏模式用）
-  (()=>{
-    const cvs = document.getElementById('t4-chart');
-    if(!cvs || cvs._tipClickBound) return;
-    cvs._tipClickBound = true;
-    cvs.addEventListener('click', e=>{
-      if(state.t4_showTip || !state.t4_chart) return;
-      const pts = state.t4_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
-      if(!pts.length) return;
-      const idx = pts[0].index;
-      state.t4_tipLocked = false;
-      const _t4rect = cvs.getBoundingClientRect();
-      const fakeCtx = {
-        tooltip: {
-          opacity: 1,
-          dataPoints: state.t4_chart.data.datasets
-            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
-              parsed:{y:ds.data[idx]}, dataset:ds }))
-            .filter(dp=>dp.raw!==undefined),
-          caretX: e.clientX - _t4rect.left,
-          caretY: e.clientY - _t4rect.top,
-        },
-        chart: state.t4_chart
-      };
-      state.t4_showTip = true;
-      t4ShowTip(fakeCtx, allDates, datasets);
-      state.t4_showTip = false;
-      state.t4_tipLocked = true;
-    });
-  })();
 }
 
 function t4GroupToggleFundsVis(gi){
@@ -3844,19 +3854,22 @@ function t3Redraw(){
   t3RenderLegend(seriesList);
   t3InitSlider(dates, firstTxDate);
   t3BindCrosshair();
-  // 點擊顯示明細（移動明細隱藏模式用）
+  // 每次 Redraw 都更新最新資料（供 click handler 取用）
+  state.t3_curDates  = dates;
+  state.t3_curSeries = seriesList;
+  // 點擊顯示明細（移動明細隱藏模式用）—— 每次 Redraw 重新綁定
   (()=>{
     const cvs = document.getElementById('t3-chart');
-    if(!cvs || cvs._tipClickBound) return;
-    cvs._tipClickBound = true;
-    cvs.addEventListener('click', e=>{
+    if(!cvs) return;
+    // 移除舊的 click handler，每次重新綁定確保 closure 是最新資料
+    if(cvs._t3ClickHandler) cvs.removeEventListener('click', cvs._t3ClickHandler);
+    cvs._t3ClickHandler = e=>{
       if(state.t3_showTip || !state.t3_chart) return;
       const pts = state.t3_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
       if(!pts.length) return;
       const idx = pts[0].index;
-      // 直接呼叫 external tooltip 顯示函數
       state.t3_tipLocked = false;
-      const _t3rect = cvs.getBoundingClientRect();
+      const rect = cvs.getBoundingClientRect();
       const fakeCtx = {
         tooltip: {
           opacity: 1,
@@ -3864,16 +3877,17 @@ function t3Redraw(){
             .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
               parsed:{y:ds.data[idx]}, dataset:ds }))
             .filter(dp=>dp.raw!==undefined),
-          caretX: e.clientX - _t3rect.left,
-          caretY: e.clientY - _t3rect.top,
+          caretX: e.clientX - rect.left,
+          caretY: e.clientY - rect.top,
         },
         chart: state.t3_chart
       };
-      state.t3_showTip = true;          // 暫時開啟，讓 showTip 不被 guard 攔截
-      t3ShowTip(fakeCtx, dates, seriesList);
-      state.t3_showTip = false;         // 恢復關閉
-      state.t3_tipLocked = true;        // 鎖定讓 tooltip 不消失
-    });
+      state.t3_showTip = true;
+      t3ShowTip(fakeCtx, state.t3_curDates, state.t3_curSeries);
+      state.t3_showTip = false;
+      state.t3_tipLocked = true;
+    };
+    cvs.addEventListener('click', cvs._t3ClickHandler);
   })();
 
   const FILL_COLORS = ['rgba(24,95,165,0.07)','rgba(29,158,117,0.07)','rgba(216,90,48,0.07)',
@@ -5539,18 +5553,21 @@ function t5Redraw(){
 
   // 初始化年度拉桿
   t5InitYearSlider(allDates);
-  // 點擊顯示明細（移動明細隱藏模式用）
+  // 每次 Redraw 更新最新資料
+  state.t5_curDates    = allDates;
+  state.t5_curDatasets = datasets;
+  // 點擊顯示明細——每次 Redraw 重新綁定確保資料最新
   (()=>{
     const cvs = document.getElementById('t5-chart');
-    if(!cvs || cvs._tipClickBound) return;
-    cvs._tipClickBound = true;
-    cvs.addEventListener('click', e=>{
+    if(!cvs) return;
+    if(cvs._t5ClickHandler) cvs.removeEventListener('click', cvs._t5ClickHandler);
+    cvs._t5ClickHandler = e=>{
       if(state.t5_showTip || !state.t5_chart) return;
       const pts = state.t5_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
       if(!pts.length) return;
       const idx = pts[0].index;
       state.t5_tipLocked = false;
-      const _t5rect = cvs.getBoundingClientRect();
+      const rect = cvs.getBoundingClientRect();
       const fakeCtx = {
         tooltip: {
           opacity: 1,
@@ -5558,16 +5575,17 @@ function t5Redraw(){
             .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
               parsed:{y:ds.data[idx]}, dataset:ds }))
             .filter(dp=>dp.raw!==undefined),
-          caretX: e.clientX - _t5rect.left,
-          caretY: e.clientY - _t5rect.top,
+          caretX: e.clientX - rect.left,
+          caretY: e.clientY - rect.top,
         },
         chart: state.t5_chart
       };
       state.t5_showTip = true;
-      t5ShowTip(fakeCtx, allDates, datasets);
+      t5ShowTip(fakeCtx, state.t5_curDates, state.t5_curDatasets);
       state.t5_showTip = false;
       state.t5_tipLocked = true;
-    });
+    };
+    cvs.addEventListener('click', cvs._t5ClickHandler);
   })();
 }
 
@@ -5612,7 +5630,7 @@ function t5ShowTip(ctx, dates, datasets){
   const date  = dates[idx];
 
   // 判斷是否點到標記點
-  const hitMarker = dps.find(dp=>{ const d=datasets[dp.datasetIndex]; return d&&d.isMarker; });
+  const hitMarker = dps.find(dp=>{ const d=datasets[dp.datasetIndex]; return d&&d.isMarker&&dp.raw!==null&&dp.raw!==undefined; });
 
   let html = `<div style="font-weight:500;font-size:13px;color:#1a1a1a;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">${date}</div>`;
 
