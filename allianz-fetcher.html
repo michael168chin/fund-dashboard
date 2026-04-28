@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+<!-- ==========================================
+     系統版本：v1.6.2
+     檔案名稱：allianz-fetcher.html
+     ========================================== -->
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -37,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.1</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.2</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -49,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.6.1';
+    const APP_VERSION = 'v1.6.2';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -588,7 +592,7 @@
                             ) : activeTab === 'twse-index' ? (
                               <tr>
                                 <th className="px-4 py-4 whitespace-nowrap">日期（西元）</th>
-                                <th className="px-4 py-4 whitespace-nowrap text-amber-600 font-black">發行量加權股價指數</th>
+                                <th className="px-4 py-4 whitespace-nowrap text-amber-600 font-black">{detectedTargetName || '數值'}</th>
                               </tr>
                             ) : (
                               <tr>
