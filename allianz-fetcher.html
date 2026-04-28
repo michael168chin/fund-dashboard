@@ -34,10 +34,10 @@
 </head>
 <body class="bg-gray-50 min-h-screen p-4 md:p-8 text-gray-800">
 
-  <!-- ▼ 版次顯示列（程式碼最前端） -->
-  <div class="max-w-5xl mx-auto mb-3 flex items-center gap-2 px-1">
-    <span class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">v1.6.0</span>
+  <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
+  <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
+    <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.1</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -49,7 +49,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.6.0';
+    const APP_VERSION = 'v1.6.1';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -400,7 +400,7 @@
               </button>
               <button onClick={() => switchTab('custom-target')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'custom-target' ? 'border-emerald-600 text-emerald-600 bg-emerald-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>自訂標的</button>
               <button onClick={() => switchTab('dividend-manual')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'dividend-manual' ? 'border-rose-600 text-rose-600 bg-rose-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>基金配息全析</button>
-              <button onClick={() => switchTab('twse-index')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'twse-index' ? 'border-amber-600 text-amber-600 bg-amber-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>台股指數</button>
+              <button onClick={() => switchTab('twse-index')} className={`flex items-center gap-2 py-3 px-4 text-xs border-b-2 transition-colors ${activeTab === 'twse-index' ? 'border-amber-600 text-amber-600 bg-amber-50/50 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>主要指數或個股</button>
             </div>
 
             <div className="mb-8">
@@ -472,14 +472,22 @@
                   <div className="mb-8 text-center">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em] mb-2 font-mono">TARGET IDENTIFIED</p>
                     <div className="inline-block bg-white px-10 md:px-16 py-6 rounded-[2.5rem] shadow-md border border-gray-100 ring-[12px] ring-blue-50/50">
-                      {detectedTargetName && (
-                        <h3 className="text-lg md:text-xl font-bold text-gray-600 mb-1 leading-tight tracking-wide">
-                          {detectedTargetName}
-                        </h3>
+                      {activeTab === 'twse-index' ? (
+                        <h2 className="text-2xl md:text-4xl font-black text-amber-700 tracking-tight leading-snug">
+                          {detectedTargetName || '未知指數'}
+                        </h2>
+                      ) : (
+                        <>
+                          {detectedTargetName && (
+                            <h3 className="text-lg md:text-xl font-bold text-gray-600 mb-1 leading-tight tracking-wide">
+                              {detectedTargetName}
+                            </h3>
+                          )}
+                          <h2 className="text-4xl md:text-6xl font-black text-blue-900 tracking-tighter">
+                            {detectedTargetCode || customTargetCode || '未知標的'}
+                          </h2>
+                        </>
                       )}
-                      <h2 className="text-4xl md:text-6xl font-black text-blue-900 tracking-tighter">
-                        {detectedTargetCode || customTargetCode || '未知標的'}
-                      </h2>
                     </div>
                   </div>
 
