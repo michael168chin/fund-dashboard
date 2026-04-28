@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.6.2
+     系統版本：v1.6.3
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.2</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.3</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.6.2';
+    const APP_VERSION = 'v1.6.3';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -263,8 +263,8 @@
 
       // ── investing.com 指數解析（英文日期格式，取 Date + Price 欄）──
       const INVESTING_INDICES = [
-        { label: 'NTD台股加權股價指數', code: 'NTD台股加權股價指數', url: 'https://www.investing.com/indices/taiwan-weighted-historical-data' },
-        { label: 'USD道瓊工業指數',     code: 'USD道瓊工業指數',     url: 'https://www.investing.com/indices/us-30-historical-data' },
+        { label: 'NTD台股加權股價指數', code: 'NTD台股加權股價指數', url: 'https://www.investing.com/indices/taiwan-weighted-historical-data',  keywords: ['Taiwan Weighted', 'TWII'] },
+        { label: 'USD道瓊工業指數',     code: 'USD道瓊工業指數',     url: 'https://www.investing.com/indices/us-30-historical-data',            keywords: ['Dow Jones Industrial Average', 'DJI', 'US 30'] },
       ];
 
       const [selectedIndexKey, setSelectedIndexKey] = useState(0); // 選擇的指數索引
@@ -273,16 +273,21 @@
         let indexList = [];
         const cleanText = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
-        const selected = INVESTING_INDICES[selectedIndexKey];
-        setDetectedTargetCode(selected.code);
-        setDetectedTargetName(selected.label);
+        // 從內容自動偵測是哪個指數（比對 keywords）
+        let autoDetected = INVESTING_INDICES[selectedIndexKey]; // 預設使用目前選擇
+        for (const idx of INVESTING_INDICES) {
+          if (idx.keywords.some(kw => cleanText.includes(kw))) {
+            autoDetected = idx;
+            break;
+          }
+        }
+        setDetectedTargetCode(autoDetected.code);
+        setDetectedTargetName(autoDetected.label);
 
         // investing.com 格式：Apr 24, 2026  38,932.40  ...
-        // 月名縮寫對照表
         const monthMap = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06',
                            Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
 
-        // 比對：英文月 空格 日, 空格 年  數值（Price）
         const regex = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\s+([\d,]+\.?\d*)/g;
         let match;
         while ((match = regex.exec(cleanText)) !== null) {
@@ -364,7 +369,7 @@
         try {
           const targetHeader = activeTab === 'fund-manual'   ? 'NTDMD0020' :
                                activeTab === 'custom-target' ? customTargetCode.trim().toUpperCase() :
-                               activeTab === 'twse-index'    ? INVESTING_INDICES[selectedIndexKey].code :
+                               activeTab === 'twse-index'    ? detectedTargetCode :
                                                                '美元兌新台幣匯率';
           for (const rate of finalProcessedRates) {
             const val = rate.value || rate.buy;
