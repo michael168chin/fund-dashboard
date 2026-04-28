@@ -37,7 +37,7 @@
   <!-- ▼ 版次顯示列（程式碼最前端） -->
   <div class="max-w-5xl mx-auto mb-3 flex items-center gap-2 px-1">
     <span class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">v1.5.9</span>
+    <span id="version-badge" class="text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">v1.6.0</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -49,7 +49,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.5.9';
+    const APP_VERSION = 'v1.6.0';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -257,24 +257,37 @@
         else parseExchangeRateData(manualText);
       };
 
-      // 台股加權指數解析（民國年轉西元年，取第1欄日期與第5欄指數）
+      // ── investing.com 指數解析（英文日期格式，取 Date + Price 欄）──
+      const INVESTING_INDICES = [
+        { label: 'NTD台股加權股價指數', code: 'NTD台股加權股價指數', url: 'https://www.investing.com/indices/taiwan-weighted-historical-data' },
+        { label: 'USD道瓊工業指數',     code: 'USD道瓊工業指數',     url: 'https://www.investing.com/indices/us-30-historical-data' },
+      ];
+
+      const [selectedIndexKey, setSelectedIndexKey] = useState(0); // 選擇的指數索引
+
       const parseTWSEIndexData = (text) => {
         let indexList = [];
         const cleanText = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-        setDetectedTargetCode('TAIEX');
-        setDetectedTargetName('發行量加權股價指數');
 
-        // 證交所格式：民國日期(115/04/01) + 成交股數 + 成交金額 + 成交筆數 + 加權指數 + 漲跌點
-        // 數字欄位有千分位逗號，需一併處理
-        const regex = /(\d{2,3}\/\d{2}\/\d{2})\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+\.\d+)\s+([+-]?[\d,]+\.\d+)/g;
+        const selected = INVESTING_INDICES[selectedIndexKey];
+        setDetectedTargetCode(selected.code);
+        setDetectedTargetName(selected.label);
+
+        // investing.com 格式：Apr 24, 2026  38,932.40  ...
+        // 月名縮寫對照表
+        const monthMap = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06',
+                           Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
+
+        // 比對：英文月 空格 日, 空格 年  數值（Price）
+        const regex = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\s+([\d,]+\.?\d*)/g;
         let match;
         while ((match = regex.exec(cleanText)) !== null) {
-          const rocDate = match[1];          // e.g. 115/04/01
-          const parts = rocDate.split('/');
-          const year = parseInt(parts[0], 10) + 1911;  // 民國轉西元
-          const adDate = `${year}/${parts[1]}/${parts[2]}`;
-          const indexVal = match[5].replace(/,/g, ''); // 第5欄：加權指數
-          indexList.push({ date: adDate, value: indexVal });
+          const mm = monthMap[match[1]];
+          const dd = match[2].padStart(2, '0');
+          const yyyy = match[3];
+          const adDate = `${yyyy}/${mm}/${dd}`;
+          const price = match[4].replace(/,/g, '');
+          indexList.push({ date: adDate, value: price });
         }
 
         if (indexList.length > 0) {
@@ -283,7 +296,7 @@
           updateDefaultDateRange(indexList);
           setFetchError('');
         } else {
-          setFetchError('無法解析台股指數資料，請確認貼上內容是否包含正確的成交資訊表格。');
+          setFetchError('無法解析指數資料，請確認貼上內容是否包含 investing.com 的歷史資料表格。');
         }
       };
 
@@ -347,7 +360,7 @@
         try {
           const targetHeader = activeTab === 'fund-manual'   ? 'NTDMD0020' :
                                activeTab === 'custom-target' ? customTargetCode.trim().toUpperCase() :
-                               activeTab === 'twse-index'    ? 'NTD台股加權股價指數' :
+                               activeTab === 'twse-index'    ? INVESTING_INDICES[selectedIndexKey].code :
                                                                '美元兌新台幣匯率';
           for (const rate of finalProcessedRates) {
             const val = rate.value || rate.buy;
@@ -402,7 +415,6 @@
                           activeTab.includes('div')        ? "https://es.allianz.com.tw/customer/product/target/interest" :
                           activeTab === 'manual'           ? "https://es.allianz.com.tw/customer/product/investment/VAS/exchange-rate" :
                           activeTab === 'fund-manual'      ? "https://es.allianz.com.tw/customer/product/investment/VUBF/target-information/NTDMD0020/FUND_PRICE" :
-                          activeTab === 'twse-index'       ? "https://www.twse.com.tw/zh/trading/historical/fmtqik.html" :
                                                              "https://es.allianz.com.tw/customer/product/target/fund"
                         } 
                         target="_blank" 
@@ -412,10 +424,29 @@
                          activeTab.includes('div')        ? '安聯人壽配息專區' :
                          activeTab === 'manual'           ? '前往匯率網頁' :
                          activeTab === 'fund-manual'      ? '前往淨值網頁' :
-                         activeTab === 'twse-index'       ? '前往證交所網頁' :
                                                             '前往連結'} <Icons.External />
                       </a>
                     </div>
+                    {/* 台股指數分頁：多指數連結選擇器 */}
+                    {activeTab === 'twse-index' && (
+                      <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p className="text-xs font-bold text-amber-700 mb-2 uppercase tracking-widest">選擇指數 → 前往 investing.com 複製資料</p>
+                        <div className="flex flex-wrap gap-2">
+                          {INVESTING_INDICES.map((idx, i) => (
+                            <a
+                              key={i}
+                              href={idx.url}
+                              target="_blank"
+                              onClick={() => setSelectedIndexKey(i)}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${selectedIndexKey === i ? 'bg-amber-600 text-white border-amber-600 shadow' : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-100'}`}
+                            >
+                              {idx.label} <Icons.External />
+                            </a>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-amber-600 mt-2">目前選擇：<strong>{INVESTING_INDICES[selectedIndexKey].label}</strong>，解析後將以此標題寫入試算表。</p>
+                      </div>
+                    )}
                     {activeTab === 'custom-target' && (
                       <input type="text" placeholder="輸入標的代碼..." className="mb-3 p-2 border border-emerald-300 rounded-lg text-sm font-bold w-full" value={customTargetCode} onChange={(e) => setCustomTargetCode(e.target.value)} />
                     )}
