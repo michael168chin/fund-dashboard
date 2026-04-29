@@ -458,13 +458,24 @@ function App() {
               active: safeParseNumber(currents[4]),
               recruit: safeParseNumber(currents[5]),
             },
-            ranks: {
-              fyfc: [getRowData(3)[1],getRowData(4)[1],getRowData(5)[1]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
-              anp: [getRowData(3)[2],getRowData(4)[2],getRowData(5)[2]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
-              cases: [getRowData(3)[3],getRowData(4)[3],getRowData(5)[3]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
-              active: [getRowData(3)[4],getRowData(4)[4],getRowData(5)[4]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
-              recruit: [getRowData(3)[5],getRowData(4)[5],getRowData(5)[5]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
-            },
+            ranks: (() => {
+              const buildRank = (colIdx) => {
+                // 姓名：Row 4,5,6 (index 3,4,5)；績效：Row 7,8,9 (index 6,7,8)
+                return [0,1,2].map(i => {
+                  const name = (getRowData(3+i)[colIdx] || '').replace(/"/g,'').trim();
+                  if (!name) return null;
+                  const perf = (getRowData(6+i)[colIdx] || '').replace(/"/g,'').trim();
+                  return perf ? `${name}(${perf})` : name;
+                }).filter(Boolean);
+              };
+              return {
+                fyfc: buildRank(1),
+                anp: buildRank(2),
+                cases: buildRank(3),
+                active: buildRank(4),
+                recruit: buildRank(5),
+              };
+            })(),
             texts: {
               mainTitle: getColG(1) || data.texts.mainTitle,
               subTitle: getColG(2) || data.texts.subTitle,
