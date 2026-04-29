@@ -1,4 +1,4 @@
-<!-- A321 宏國通訊處 績效看板 v1.7 -->
+<!-- A321 宏國通訊處 績效看板 v1.6 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -44,10 +44,10 @@
 const { useState, useEffect, useCallback } = React;
 
 const ADMIN_PASSWORD = '8888';
-const STORAGE_KEY = 'a321_dashboard_v17';
+const STORAGE_KEY = 'a321_jan2026_data_v14';
 const DEFAULT_SHEET_ID = '17fgxfIU2wrJTv6ozBcfo5hZS5-D4XQsdurFkaZHzK6k';
 const DEFAULT_SHEET_NAME = '當工作月';
-const DEFAULT_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+const DEFAULT_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(DEFAULT_SHEET_NAME)}`;
 const BASE_TARGETS = { fyfc: 390400, anp: 4477335, cases: 60, active: 24, recruit: 1 };
 const DEFAULT_DEADLINE = "2026-01-23 17:00";
 
@@ -613,7 +613,7 @@ function App() {
       </main>
 
       <footer className="flex-none relative z-10 text-center p-2 text-gray-500 text-[10px] border-t border-white/5">
-        Powered by A321 宏國通訊處 ｜ v1.7
+        Powered by A321 宏國通訊處 ｜ v1.6
       </footer>
 
       {/* 設定按鈕 */}
@@ -639,4 +639,4 @@ root.render(<App />);
 </script>
 </body>
 </html>
-<!-- A321 宏國通訊處 績效看板 v1.7 end -->
+<!-- A321 宏國通訊處 績效看板 v1.6 end -->
