@@ -459,14 +459,19 @@ function App() {
               recruit: safeParseNumber(currents[5]),
             },
             ranks: (() => {
+              const getCell = (rowIdx, colIdx) => {
+                const row = getRowData(rowIdx);
+                return row.length > colIdx ? (row[colIdx] || '').replace(/"/g,'').trim() : '';
+              };
               const buildRank = (colIdx) => {
-                // 姓名：Row 4,5,6 (index 3,4,5)；績效：Row 7,8,9 (index 6,7,8)
+                // 姓名：Row 4,5,6 (rowIndex 3,4,5)；績效：Row 7,8,9 (rowIndex 6,7,8)
+                // 用固定三格陣列，名字空白就填 '-'，保持位置不錯位
                 return [0,1,2].map(i => {
-                  const name = (getRowData(3+i)[colIdx] || '').replace(/"/g,'').trim();
-                  if (!name) return null;
-                  const perf = (getRowData(6+i)[colIdx] || '').replace(/"/g,'').trim();
+                  const name = getCell(3+i, colIdx);
+                  if (!name) return '-';
+                  const perf = getCell(6+i, colIdx);
                   return perf ? `${name}(${perf})` : name;
-                }).filter(Boolean);
+                });
               };
               return {
                 fyfc: buildRank(1),
