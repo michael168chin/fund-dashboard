@@ -1,3 +1,4 @@
+<!-- A321 宏國通訊處 績效看板 v1.6 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -431,9 +432,27 @@ function App() {
         const res = await fetch(`${data.sheetUrl}${data.sheetUrl.includes('?')?'&':'?'}t=${Date.now()}`);
         const text = await res.text();
         const rows = text.split(/\r\n|\n|\r/);
+        const parseCSVRow = (line) => {
+          const result = [];
+          let cur = '';
+          let inQuote = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+              inQuote = !inQuote;
+            } else if (ch === ',' && !inQuote) {
+              result.push(cur.trim());
+              cur = '';
+            } else {
+              cur += ch;
+            }
+          }
+          result.push(cur.trim());
+          return result;
+        };
         const getRowData = (idx) => {
           if (rows.length <= idx) return [];
-          return rows[idx].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+          return parseCSVRow(rows[idx]);
         };
         const targets = getRowData(1);
         const currents = getRowData(2);
@@ -620,3 +639,4 @@ root.render(<App />);
 </script>
 </body>
 </html>
+<!-- A321 宏國通訊處 績效看板 v1.6 end -->
