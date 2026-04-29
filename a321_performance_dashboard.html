@@ -1,0 +1,272 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, #root { font-family: 'Noto Sans TC', sans-serif; }
+  #app { background: linear-gradient(160deg, #1a0a0a 0%, #0d0d0d 60%, #0a1a0a 100%); min-height: 600px; color: white; padding: 0; border-radius: 12px; overflow: hidden; position: relative; }
+  .dots-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(251,191,36,0.15) 1px, transparent 1px); background-size: 28px 28px; pointer-events: none; }
+  header { background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .logo-area { display: flex; align-items: center; gap: 8px; }
+  .logo-area img { height: 22px; filter: brightness(0) invert(1); }
+  .unit-name { font-size: 13px; font-weight: 700; background: linear-gradient(90deg, #fde68a, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+  .main-title { text-align: center; flex: 1; }
+  .main-title h1 { font-size: 22px; font-weight: 900; background: linear-gradient(180deg, #fde68a 0%, #ef4444 60%, #991b1b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.15em; }
+  .main-title p { font-size: 10px; color: rgba(253,230,138,0.7); letter-spacing: 0.3em; margin-top: 2px; }
+  .deadline-badge { background: #dc2626; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  main { padding: 10px 12px; display: flex; gap: 12px; align-items: flex-start; }
+  .left-panel { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .trophy-wrap { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+  .trophy-glow { position: absolute; inset: -10px; background: rgba(234,179,8,0.2); border-radius: 50%; filter: blur(20px); animation: pulse 3s infinite; }
+  .trophy-wrap svg { position: relative; z-index: 1; width: 90px; height: 90px; }
+  .trophy-label { background: rgba(120,10,10,0.7); border: 1px solid rgba(234,179,8,0.4); border-radius: 8px; padding: 6px 10px; text-align: center; width: 100%; }
+  .trophy-label .t1 { font-size: 12px; font-weight: 900; color: #fde68a; }
+  .trophy-label .t2 { font-size: 10px; color: #86efac; margin-top: 2px; }
+  .sync-indicator { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #6b7280; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  .right-panel { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .countdown { background: rgba(6,78,59,0.4); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; }
+  .countdown.urgent { background: rgba(127,29,29,0.5); border-color: rgba(248,113,113,0.5); }
+  .countdown-label { font-size: 11px; color: #d1d5db; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .countdown-time { display: flex; gap: 4px; align-items: baseline; }
+  .countdown-unit { display: flex; flex-direction: column; align-items: center; }
+  .countdown-num { font-size: 28px; font-weight: 900; font-family: monospace; color: #fbbf24; line-height: 1; }
+  .countdown.urgent .countdown-num { color: #fca5a5; }
+  .countdown-sep { font-size: 20px; color: #4b5563; align-self: flex-end; margin-bottom: 4px; }
+  .countdown-u { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+  .metrics-grid { display: grid; grid-cols: repeat(2, 1fr); grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metric-card { background: rgba(17,24,39,0.6); border: 1px solid rgba(75,85,99,0.5); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; }
+  .metric-card.achieved { background: linear-gradient(135deg, rgba(120,53,15,0.8), rgba(127,29,29,0.8)); border-color: #d97706; box-shadow: 0 0 12px rgba(217,119,6,0.3); }
+  .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .metric-title { font-size: 11px; font-weight: 700; color: #d1d5db; }
+  .metric-pct { font-size: 13px; font-weight: 900; font-family: monospace; color: #fbbf24; }
+  .metric-card.achieved .metric-pct { color: #fde68a; }
+  .metric-value { font-size: 20px; font-weight: 900; font-family: monospace; color: white; }
+  .metric-goal { font-size: 10px; color: #6b7280; margin-bottom: 4px; }
+  .progress-bar { height: 3px; background: rgba(75,85,99,0.4); border-radius: 2px; margin-bottom: 6px; }
+  .progress-fill { height: 3px; border-radius: 2px; background: linear-gradient(90deg, #dc2626, #f87171); transition: width 1s ease; }
+  .metric-card.achieved .progress-fill { background: #d97706; }
+  .ranks { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 4px; text-align: center; }
+  .rank-item { display: flex; flex-direction: column; gap: 1px; }
+  .rank-medal { font-size: 11px; }
+  .rank-name { font-size: 10px; color: #d1d5db; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .metric-wide { grid-column: span 1; }
+  footer { text-align: center; padding: 6px; font-size: 10px; color: #374151; border-top: 1px solid rgba(255,255,255,0.05); }
+  .coins { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; overflow: hidden; }
+  .coin { position: absolute; animation: fall linear infinite; opacity: 0; font-size: 14px; }
+  @keyframes fall { 0%{transform:translateY(-5%) rotate(0deg);opacity:0} 10%{opacity:0.8} 90%{opacity:0.8} 100%{transform:translateY(105%) rotate(720deg);opacity:0} }
+</style>
+
+<div id="app">
+  <div class="dots-bg"></div>
+  <div class="coins" id="coins"></div>
+
+  <header>
+    <div class="logo-area">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Allianz.svg" alt="Allianz" onerror="this.style.display='none'">
+      <span class="unit-name">A321 宏國通訊處</span>
+      <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncStatus">連線中</span></div>
+    </div>
+    <div class="main-title">
+      <h1 id="mainTitle">2026 開門紅</h1>
+      <p id="subTitle">王者歸來 開創新局</p>
+    </div>
+    <div class="deadline-badge" id="deadlineBadge">1/23 截單</div>
+  </header>
+
+  <main>
+    <div class="left-panel">
+      <div class="trophy-wrap">
+        <div class="trophy-glow"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FDE68A"/><stop offset="50%" stop-color="#D97706"/><stop offset="100%" stop-color="#FDE68A"/></linearGradient></defs>
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" stroke="url(#g)"/>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" stroke="url(#g)"/>
+          <path d="M4 22h16" stroke="url(#g)" stroke-width="2"/>
+          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" stroke="url(#g)"/>
+          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" stroke="url(#g)"/>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" fill="url(#g)" fill-opacity="0.2" stroke="url(#g)"/>
+        </svg>
+      </div>
+      <div class="trophy-label">
+        <div class="t1">A321 宏國</div>
+        <div class="t2" id="trophySub">豐收滿滿</div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="countdown" id="countdown">
+        <div class="countdown-label">距離截單僅剩</div>
+        <div class="countdown-time">
+          <div class="countdown-unit"><span class="countdown-num" id="cd-d">0</span><span class="countdown-u">天</span></div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-unit"><span class="countdown-num" id="cd-h">00</span><span class="countdown-u">時</span></div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-unit"><span class="countdown-num" id="cd-m">00</span><span class="countdown-u">分</span></div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-unit"><span class="countdown-num" id="cd-s">00</span><span class="countdown-u">秒</span></div>
+        </div>
+      </div>
+
+      <div class="metrics-grid" id="metricsGrid"></div>
+    </div>
+  </main>
+
+  <footer>Powered by A321 宏國通訊處</footer>
+</div>
+
+<script>
+const SHEET_ID = '17fgxfIU2wrJTv6ozBcfo5hZS5-D4XQsdurFkaZHzK6k';
+const SHEET_NAME = '當工作月';
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+let state = {
+  targets: { fyfc:390400, anp:4477335, cases:60, active:24, recruit:1 },
+  current: { fyfc:0, anp:0, cases:0, active:0, recruit:0 },
+  ranks: { fyfc:[], anp:[], cases:[], active:[], recruit:[] },
+  texts: { mainTitle:'2026 開門紅', subTitle:'王者歸來 開創新局', trophySub:'豐收滿滿', deadlineDate:'2026-01-23 17:00' }
+};
+
+function fmt(n){ return Math.round(n).toLocaleString(); }
+
+function safeNum(s){
+  if(!s) return 0;
+  const c = String(s).replace(/,/g,'').replace(/"/g,'').trim();
+  const n = Number(c);
+  return isNaN(n)?0:n;
+}
+
+function getDeadlineLabel(d){
+  try{
+    const dt = new Date(d.replace(/-/g,'/'));
+    if(isNaN(dt.getTime())) return '截單';
+    return `${dt.getMonth()+1}/${dt.getDate()} 截單`;
+  }catch(e){ return '1/23 截單'; }
+}
+
+function updateCountdown(){
+  const d = state.texts.deadlineDate || '2026-01-23 17:00';
+  let target;
+  try{ target = new Date(d.replace(/-/g,'/')); if(isNaN(target.getTime())) throw new Error(); }
+  catch(e){ target = new Date('2026/01/23 17:00'); }
+  const now = new Date();
+  const diff = target - now;
+  const cd = document.getElementById('countdown');
+  if(diff > 0){
+    const days = Math.floor(diff/(1000*60*60*24));
+    const hours = Math.floor((diff/(1000*60*60))%24);
+    const mins = Math.floor((diff/1000/60)%60);
+    const secs = Math.floor((diff/1000)%60);
+    document.getElementById('cd-d').textContent = days;
+    document.getElementById('cd-h').textContent = String(hours).padStart(2,'0');
+    document.getElementById('cd-m').textContent = String(mins).padStart(2,'0');
+    document.getElementById('cd-s').textContent = String(secs).padStart(2,'0');
+    if(days < 3){ cd.classList.add('urgent'); } else { cd.classList.remove('urgent'); }
+  } else {
+    ['cd-d','cd-h','cd-m','cd-s'].forEach(id=>{ document.getElementById(id).textContent='0'; });
+  }
+}
+
+function renderMetrics(){
+  const metrics = [
+    { key:'fyfc', label:'FYFC', color:'#f87171' },
+    { key:'anp', label:'ANP', color:'#4ade80' },
+    { key:'cases', label:'新契約件數', unit:'件', color:'#c084fc' },
+    { key:'active', label:'實動人數', unit:'人', color:'#facc15' },
+    { key:'recruit', label:'新聘人數', unit:'人', color:'#60a5fa' }
+  ];
+  const grid = document.getElementById('metricsGrid');
+  grid.innerHTML = '';
+  metrics.forEach(m => {
+    const cur = state.current[m.key] || 0;
+    const goal = state.targets[m.key] || 1;
+    const pct = Math.min(Math.round(cur/goal*100), 999);
+    const achieved = cur >= goal;
+    const ranks = state.ranks[m.key] || [];
+    const card = document.createElement('div');
+    card.className = 'metric-card' + (achieved?' achieved':'');
+    card.innerHTML = `
+      <div class="metric-header">
+        <span class="metric-title">${m.label}</span>
+        <span class="metric-pct">${pct}%</span>
+      </div>
+      <div class="metric-value" style="color:${achieved?'#fde68a':m.color}">${fmt(cur)}${m.unit?'<span style="font-size:11px;color:#9ca3af;"> '+m.unit+'</span>':''}</div>
+      <div class="metric-goal">目標: ${fmt(goal)}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div>
+      <div class="ranks">
+        <div class="rank-item"><div class="rank-medal">🥇</div><div class="rank-name">${ranks[0]||'-'}</div></div>
+        <div class="rank-item"><div class="rank-medal">🥈</div><div class="rank-name">${ranks[1]||'-'}</div></div>
+        <div class="rank-item"><div class="rank-medal">🥉</div><div class="rank-name">${ranks[2]||'-'}</div></div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function updateTexts(){
+  document.getElementById('mainTitle').textContent = state.texts.mainTitle || '2026 開門紅';
+  document.getElementById('subTitle').textContent = state.texts.subTitle || '王者歸來 開創新局';
+  document.getElementById('trophySub').textContent = state.texts.trophySub || '豐收滿滿';
+  document.getElementById('deadlineBadge').textContent = getDeadlineLabel(state.texts.deadlineDate);
+}
+
+async function fetchSheet(){
+  const dot = document.getElementById('syncDot');
+  const status = document.getElementById('syncStatus');
+  dot.style.background = '#f59e0b';
+  try{
+    const res = await fetch(`${SHEET_URL}&t=${Date.now()}`);
+    const text = await res.text();
+    const rows = text.split(/\r\n|\n|\r/);
+    const getRow = idx => {
+      if(rows.length <= idx) return [];
+      return rows[idx].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)||[];
+    };
+    const targets = getRow(1);
+    const currents = getRow(2);
+    const getG = idx => { const r=getRow(idx); return r.length>6?r[6].replace(/"/g,'').trim():''; };
+    if(targets.length>=6 && currents.length>=6){
+      state.targets = { fyfc:safeNum(targets[1]), anp:safeNum(targets[2]), cases:safeNum(targets[3]), active:safeNum(targets[4]), recruit:safeNum(targets[5]) };
+      state.current = { fyfc:safeNum(currents[1]), anp:safeNum(currents[2]), cases:safeNum(currents[3]), active:safeNum(currents[4]), recruit:safeNum(currents[5]) };
+      state.ranks = {
+        fyfc:[getRow(3)[1],getRow(4)[1],getRow(5)[1]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
+        anp:[getRow(3)[2],getRow(4)[2],getRow(5)[2]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
+        cases:[getRow(3)[3],getRow(4)[3],getRow(5)[3]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
+        active:[getRow(3)[4],getRow(4)[4],getRow(5)[4]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
+        recruit:[getRow(3)[5],getRow(4)[5],getRow(5)[5]].map(s=>s?.replace(/"/g,'')).filter(Boolean),
+      };
+      state.texts.mainTitle = getG(1)||state.texts.mainTitle;
+      state.texts.subTitle = getG(2)||state.texts.subTitle;
+      state.texts.trophySub = getG(4)||state.texts.trophySub;
+      state.texts.deadlineDate = getG(5)||state.texts.deadlineDate;
+    }
+    dot.style.background = '#22c55e';
+    status.textContent = '已連線';
+    renderMetrics(); updateTexts();
+  }catch(e){
+    dot.style.background = '#ef4444';
+    status.textContent = '離線';
+  }
+}
+
+function spawnCoins(){
+  const container = document.getElementById('coins');
+  const symbols = ['💰','✨','🧧'];
+  for(let i=0;i<10;i++){
+    const el = document.createElement('div');
+    el.className = 'coin';
+    el.textContent = symbols[Math.floor(Math.random()*3)];
+    el.style.left = `${Math.random()*100}%`;
+    el.style.animationDuration = `${5+Math.random()*5}s`;
+    el.style.animationDelay = `${Math.random()*5}s`;
+    container.appendChild(el);
+  }
+}
+
+renderMetrics();
+updateTexts();
+updateCountdown();
+spawnCoins();
+setInterval(updateCountdown, 1000);
+fetchSheet();
+setInterval(fetchSheet, 30000);
+</script>
