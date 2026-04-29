@@ -454,6 +454,10 @@ function App() {
           if (rows.length <= idx) return [];
           return parseCSVRow(rows[idx]);
         };
+        // DEBUG: 印出 Row 4-9 的內容以診斷問題
+        for(let di=3; di<=8; di++){
+          console.log(`rows[${di}] =`, JSON.stringify(getRowData(di)));
+        }
         const targets = getRowData(1);
         const currents = getRowData(2);
         const getColG = (idx) => {
@@ -613,7 +617,7 @@ function App() {
       </main>
 
       <footer className="flex-none relative z-10 text-center p-2 text-gray-500 text-[10px] border-t border-white/5">
-        Powered by A321 宏國通訊處
+        Powered by A321 宏國通訊處 ｜ v1.6
       </footer>
 
       {/* 設定按鈕 */}
