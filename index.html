@@ -2338,8 +2338,9 @@ function t4GroupMsRenderList(gi, filter=''){
       + ' onchange="t4DivChkChange('+gi+',\''+sv+'\',this)" onclick="event.stopPropagation();"'
       + ' style="width:11px;height:11px;accent-color:#10b981;cursor:pointer;">'
       + '<span style="font-size:9px;color:#065f46;font-weight:700;">配息</span></label>'
-      + '<input type="number" min="0" max="100" step="1" value="'+(inclD4>0?inclD4:'')+'"
-      + ' placeholder="%" style="width:32px;height:18px;font-size:9px;padding:1px 2px;border:1px solid #d1fae5;border-radius:4px;text-align:right;background:#f0fdf4;box-sizing:border-box;"'
+      + '<input type="number" min="0" max="100" step="1"'
+      + ' value="'+(inclD4>0?inclD4:'')
+      + '" placeholder="%" style="width:32px;height:18px;font-size:9px;padding:1px 2px;border:1px solid #d1fae5;border-radius:4px;text-align:right;background:#f0fdf4;box-sizing:border-box;"'
       + ' title="回購%" onclick="event.stopPropagation();"'
       + ' oninput="t4DivRatioInput('+gi+',\''+sv+'\',this)">'
       + '</div>';
