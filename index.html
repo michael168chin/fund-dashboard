@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.53 (整合版)
+     版本：V2.54 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -504,8 +504,8 @@
               <div class="flex flex-col gap-1.5">
                 <div class="text-xs text-slate-500">配息再投資</div>
                 <div class="flex gap-1">
-                  <button id="t4-btn-div-in" onclick="t4SetInclDiv(true)" class="btn text-xs">計入</button>
-                  <button id="t4-btn-div-out" onclick="t4SetInclDiv(false)" class="btn btn-primary text-xs">不計入</button>
+                  <button id="t4-btn-div-in" onclick="t4SetInclDivAll(true)" class="btn text-xs">全部計入</button>
+                  <button id="t4-btn-div-out" onclick="t4SetInclDivAll(false)" class="btn btn-primary text-xs">全部不計入</button>
                 </div>
               </div>
             </div>
@@ -534,6 +534,8 @@
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(0,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(0,false)">全不選</button>
                       <button id="t4-view-btn-g0" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(0)">看已選</button>
+                      <button class="ms-act-btn" style="background:#f0fdf4;color:#065f46;" onclick="t4GroupSetInclDiv(0,true)" title="本組全部計入配息">配息↑</button>
+                      <button class="ms-act-btn" style="background:#fff1f2;color:#9f1239;" onclick="t4GroupSetInclDiv(0,false)" title="本組全部不計入配息">配息↓</button>
                     </div>
                     <div class="ms-list" id="ms-list-g0"></div>
                   </div>
@@ -578,6 +580,8 @@
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(1,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(1,false)">全不選</button>
                       <button id="t4-view-btn-g1" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(1)">看已選</button>
+                      <button class="ms-act-btn" style="background:#f0fdf4;color:#065f46;" onclick="t4GroupSetInclDiv(1,true)" title="本組全部計入配息">配息↑</button>
+                      <button class="ms-act-btn" style="background:#fff1f2;color:#9f1239;" onclick="t4GroupSetInclDiv(1,false)" title="本組全部不計入配息">配息↓</button>
                     </div>
                     <div class="ms-list" id="ms-list-g1"></div>
                   </div>
@@ -622,6 +626,8 @@
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(2,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(2,false)">全不選</button>
                       <button id="t4-view-btn-g2" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(2)">看已選</button>
+                      <button class="ms-act-btn" style="background:#f0fdf4;color:#065f46;" onclick="t4GroupSetInclDiv(2,true)" title="本組全部計入配息">配息↑</button>
+                      <button class="ms-act-btn" style="background:#fff1f2;color:#9f1239;" onclick="t4GroupSetInclDiv(2,false)" title="本組全部不計入配息">配息↓</button>
                     </div>
                     <div class="ms-list" id="ms-list-g2"></div>
                   </div>
@@ -666,6 +672,8 @@
                       <button class="ms-act-btn ms-act-all" onclick="t4GroupSelectAll(3,true)">全選</button>
                       <button class="ms-act-btn ms-act-none" onclick="t4GroupSelectAll(3,false)">全不選</button>
                       <button id="t4-view-btn-g3" class="ms-act-btn ms-act-view" onclick="t4GroupCycleView(3)">看已選</button>
+                      <button class="ms-act-btn" style="background:#f0fdf4;color:#065f46;" onclick="t4GroupSetInclDiv(3,true)" title="本組全部計入配息">配息↑</button>
+                      <button class="ms-act-btn" style="background:#fff1f2;color:#9f1239;" onclick="t4GroupSetInclDiv(3,false)" title="本組全部不計入配息">配息↓</button>
                     </div>
                     <div class="ms-list" id="ms-list-g3"></div>
                   </div>
@@ -802,8 +810,8 @@
               <div class="flex flex-col gap-1.5">
                 <div class="text-xs text-slate-500">配息再投資</div>
                 <div class="flex gap-1">
-                  <button id="t5-btn-div-in" onclick="t5SetInclDiv(true)" class="btn text-xs">計入</button>
-                  <button id="t5-btn-div-out" onclick="t5SetInclDiv(false)" class="btn btn-primary text-xs">不計入</button>
+                  <button id="t5-btn-div-in" onclick="t5SetInclDivAll(true)" class="btn text-xs">全部計入</button>
+                  <button id="t5-btn-div-out" onclick="t5SetInclDivAll(false)" class="btn btn-primary text-xs">全部不計入</button>
                 </div>
               </div>
             </div>
@@ -1131,10 +1139,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.53  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.54  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.53 (整合版)';
+const APP_VERSION = 'V2.54 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1287,6 +1295,7 @@ let state = {
   t5_loaded: false,
   t5_fxMode: 'orig',
   t5_inclDiv: false,
+  t5_inclDivMap: {},    // 個別標的配息計入 { fund: true/false }，預設不計入
   t5_showFundName: true,
   t5_dateLocked: false,
   t5_tipLocked: false,
@@ -1295,7 +1304,8 @@ let state = {
   t5_markerSize: 2,   // 標記點預設尺寸
   t5_visMap: {},
   t5_cardCollapsed: [false,false,false,false],  // 各組投入設定卡片是否收起
-  t4_inclDiv: false,    // 是否將配息再投資計入走勢
+  t4_inclDiv: false,    // 全域預設（向下相容）
+  t4_inclDivMap: {},    // 個別標的配息計入 { fund: true/false }，預設不計入
   t3_showTotal: true,
 };
 
@@ -2304,6 +2314,7 @@ function t4GroupMsRenderList(gi, filter=''){
     const emaKey = gi+':'+v;
     const ema    = state.t4_emaMap[emaKey] || { show:false, period:55 };
     const sv     = v.replace(/'/g,String.fromCharCode(92)+"'");
+    const inclD4 = state.t4_inclDivMap[v] === true;
     return '<div class="ms-item" style="gap:3px;" onclick="t4GroupToggleItem('+gi+',\''+sv+'\')">'
       + '<input type="checkbox" '+(g.selected.has(v)?'checked':'')
       + ' onclick="event.stopPropagation();t4GroupToggleItem('+gi+',\''+sv+'\')">'
@@ -2322,6 +2333,11 @@ function t4GroupMsRenderList(gi, filter=''){
       + ' style="width:42px;height:20px;font-size:9px;padding:1px 3px;border:1px solid #fde68a;border-radius:4px;text-align:right;background:#fffbeb;box-sizing:border-box;"'
       + ' title="EMA天數" onclick="event.stopPropagation();"'
       + ' oninput="t4SetEmaPeriod('+gi+',\''+sv+'\',this.value)">'
+      + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="配息再投資計入">'
+      + '<input type="checkbox" '+(inclD4?'checked':'')
+      + ' onchange="t4SetInclDivFund(\''+sv+'\',this.checked)" onclick="event.stopPropagation();"'
+      + ' style="width:11px;height:11px;accent-color:#10b981;cursor:pointer;">'
+      + '<span style="font-size:9px;color:#065f46;font-weight:700;">配息</span></label>'
       + '</div>';
   }).join('');
 }
@@ -2682,8 +2698,9 @@ function t4CalcDivAdjustedSeries(fund, allDates){
     return val;
   });
 
-  // 若不計入配息，直接回傳原始序列
-  if(!state.t4_inclDiv) return rawVals;
+  // 若不計入配息（個別設定，預設不計入），直接回傳原始序列
+  const inclDiv = state.t4_inclDivMap[fund] === true;
+  if(!inclDiv) return rawVals;
 
   // 計算每日持有單位數（配息再投資）
   const unitsSeries = t4CalcReinvestUnits(fund, allDates);
@@ -2694,6 +2711,49 @@ function t4CalcDivAdjustedSeries(fund, allDates){
     if(rawVals[i]===null || rawVals[i]===undefined) return null;
     return rawVals[i] * unitsSeries[i];
   });
+}
+
+// ── 配息計入：個別標的設定 ─────────────────────────────
+function t4SetInclDivFund(fund, val){
+  state.t4_inclDivMap[fund] = val;
+  if(state.t4_loaded) t4Redraw();
+}
+function t5SetInclDivFund(fund, val){
+  state.t5_inclDivMap[fund] = val;
+  if(state.t5_loaded) t5Redraw();
+}
+
+// ── 配息計入：組合層（該組已選標的）─────────────────────
+function t4GroupSetInclDiv(gi, val){
+  const sel = [...t4Groups[gi].selected];
+  sel.forEach(fund=>{ state.t4_inclDivMap[fund] = val; });
+  t4GroupMsRenderList(gi);  // 更新勾選框外觀
+  if(state.t4_loaded) t4Redraw();
+}
+function t5GroupSetInclDiv(gi, val){
+  const sel = [...t5Groups[gi].selected];
+  sel.forEach(fund=>{ state.t5_inclDivMap[fund] = val; });
+  t5GroupMsRenderList(gi);
+  if(state.t5_loaded) t5Redraw();
+}
+
+// ── 配息計入：全域（所有標的）────────────────────────────
+function t4SetInclDivAll(val){
+  // 把所有已知標的都設定
+  const allFunds = t4Groups.flatMap(g=>[...g.all]);
+  [...new Set(allFunds)].forEach(f=>{ state.t4_inclDivMap[f] = val; });
+  document.getElementById('t4-btn-div-in').className  =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-div-out').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  [0,1,2,3].forEach(gi=>t4GroupMsRenderList(gi));
+  if(state.t4_loaded) t4Redraw();
+}
+function t5SetInclDivAll(val){
+  const allFunds = t5Groups.flatMap(g=>[...g.all]);
+  [...new Set(allFunds)].forEach(f=>{ state.t5_inclDivMap[f] = val; });
+  document.getElementById('t5-btn-div-in').className  =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t5-btn-div-out').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  [0,1,2,3].forEach(gi=>t5GroupMsRenderList(gi));
+  if(state.t5_loaded) t5Redraw();
 }
 
 function t4SetInclDiv(val){
@@ -4779,6 +4839,8 @@ function t5BuildGroupsUI(){
             <button class="ms-act-btn ms-act-all" onclick="t5GroupSelectAll(${gi},true)">全選</button>
             <button class="ms-act-btn ms-act-none" onclick="t5GroupSelectAll(${gi},false)">全不選</button>
             <button id="t5-view-btn-g${gi}" class="ms-act-btn ms-act-view" onclick="t5GroupCycleView(${gi})">看已選</button>
+            <button class="ms-act-btn" style="background:#f0fdf4;color:#065f46;" onclick="t5GroupSetInclDiv(${gi},true)" title="本組全部計入配息">配息↑</button>
+            <button class="ms-act-btn" style="background:#fff1f2;color:#9f1239;" onclick="t5GroupSetInclDiv(${gi},false)" title="本組全部不計入配息">配息↓</button>
           </div>
           <div class="ms-list" id="t5-ms-list-g${gi}"></div>
         </div>
@@ -4823,11 +4885,19 @@ function t5GroupMsRenderList(gi, filter=''){
   else if(mode===2) items = items.filter(v=>!g.selected.has(v));
   if(!items.length){ list.innerHTML='<div class="ms-empty">無符合項目</div>'; return; }
   list.innerHTML = items.map(v=>{
-    const label = state.t5_showFundName ? t3FundLabel(v,'t5') : v;
-    return `<div class="ms-item" onclick="t5GroupToggleItem(${gi},'${v.replace(/'/g,"\\'")}')">
+    const label  = state.t5_showFundName ? t3FundLabel(v,'t5') : v;
+    const inclD5 = state.t5_inclDivMap[v] === true;
+    const sv5    = v.replace(/'/g,"\\'");
+    return `<div class="ms-item" style="gap:3px;" onclick="t5GroupToggleItem(${gi},'${sv5}')">
       <input type="checkbox" ${g.selected.has(v)?'checked':''}
-        onclick="event.stopPropagation();t5GroupToggleItem(${gi},'${v.replace(/'/g,"\\'")}')">
-      <span style="overflow:hidden;text-overflow:ellipsis;">${label}</span>
+        onclick="event.stopPropagation();t5GroupToggleItem(${gi},'${sv5}')">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${label}</span>
+      <label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();" title="配息再投資計入">
+        <input type="checkbox" ${inclD5?'checked':''}
+          onchange="t5SetInclDivFund('${sv5}',this.checked)" onclick="event.stopPropagation();"
+          style="width:11px;height:11px;accent-color:#10b981;cursor:pointer;">
+        <span style="font-size:9px;color:#065f46;font-weight:700;">配息</span>
+      </label>
     </div>`;
   }).join('');
 }
@@ -5236,7 +5306,7 @@ function t5CalcFundSeries(fund, allDates){
   // 取原始淨值序列（已含匯率與配息再投資邏輯）
   const useFX = state.t5_fxMode === 'fx';
   const isUSD = fund.toUpperCase().startsWith('USD');
-  const inclDiv = state.t5_inclDiv;
+  const inclDiv = state.t5_inclDivMap[fund] === true;
 
   // 先取 t4 版的配息再投資單位數序列
   let unitsMult = null;
@@ -5269,7 +5339,7 @@ function t5CalcGroupSeries(gi, allDates){
   // 各標的每日有效淨值序列（NTD）
   // 若計入配息再投資：nav × unitsMult（累積持有倍率）
   // 含義：每花1元買入時，實際上已在持有 unitsMult 倍的單位數效益
-  const inclDiv = state.t5_inclDiv;
+  const inclDiv = state.t5_inclDivMap[fund] === true;
   const fundNavs = sel.map(fund=>{
     const useFX = state.t5_fxMode==='fx';
     const isUSD = fund.toUpperCase().startsWith('USD');
