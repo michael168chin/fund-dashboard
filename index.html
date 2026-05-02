@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.54 (整合版)
+     版本：V2.55 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1139,10 +1139,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.54  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.55  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.54 (整合版)';
+const APP_VERSION = 'V2.55 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -2314,7 +2314,7 @@ function t4GroupMsRenderList(gi, filter=''){
     const emaKey = gi+':'+v;
     const ema    = state.t4_emaMap[emaKey] || { show:false, period:55 };
     const sv     = v.replace(/'/g,String.fromCharCode(92)+"'");
-    const inclD4 = state.t4_inclDivMap[v] === true;
+    const inclD4 = state.t4_inclDivMap[gi+':'+v] === true;
     return '<div class="ms-item" style="gap:3px;" onclick="t4GroupToggleItem('+gi+',\''+sv+'\')">'
       + '<input type="checkbox" '+(g.selected.has(v)?'checked':'')
       + ' onclick="event.stopPropagation();t4GroupToggleItem('+gi+',\''+sv+'\')">'
@@ -2335,7 +2335,7 @@ function t4GroupMsRenderList(gi, filter=''){
       + ' oninput="t4SetEmaPeriod('+gi+',\''+sv+'\',this.value)">'
       + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="配息再投資計入">'
       + '<input type="checkbox" '+(inclD4?'checked':'')
-      + ' onchange="t4SetInclDivFund(\''+sv+'\',this.checked)" onclick="event.stopPropagation();"'
+      + ' onchange="t4SetInclDivFund('+gi+',\''+sv+'\',this.checked)" onclick="event.stopPropagation();"'
       + ' style="width:11px;height:11px;accent-color:#10b981;cursor:pointer;">'
       + '<span style="font-size:9px;color:#065f46;font-weight:700;">配息</span></label>'
       + '</div>';
@@ -2685,7 +2685,7 @@ function t4CalcReinvestUnits(fund, allDates){
 }
 
 // 計算含配息再投資的標的價值序列（以起始日=100為基準）
-function t4CalcDivAdjustedSeries(fund, allDates){
+function t4CalcDivAdjustedSeries(fund, allDates, gi){
   const useFX  = state.t4_fxMode === 'fx';
   const isUSD  = fund.toUpperCase().startsWith('USD');
 
@@ -2698,8 +2698,8 @@ function t4CalcDivAdjustedSeries(fund, allDates){
     return val;
   });
 
-  // 若不計入配息（個別設定，預設不計入），直接回傳原始序列
-  const inclDiv = state.t4_inclDivMap[fund] === true;
+  // 若不計入配息（個別設定，key=gi:fund，預設不計入），直接回傳原始序列
+  const inclDiv = state.t4_inclDivMap[(gi!==undefined?gi+':':'')+fund] === true;
   if(!inclDiv) return rawVals;
 
   // 計算每日持有單位數（配息再投資）
@@ -2714,25 +2714,27 @@ function t4CalcDivAdjustedSeries(fund, allDates){
 }
 
 // ── 配息計入：個別標的設定 ─────────────────────────────
-function t4SetInclDivFund(fund, val){
-  state.t4_inclDivMap[fund] = val;
+function t4SetInclDivFund(gi, fund, val){
+  state.t4_inclDivMap[gi+':'+fund] = val;
+  t4GroupMsRenderList(gi);  // 更新勾選框外觀
   if(state.t4_loaded) t4Redraw();
 }
-function t5SetInclDivFund(fund, val){
-  state.t5_inclDivMap[fund] = val;
+function t5SetInclDivFund(gi, fund, val){
+  state.t5_inclDivMap[gi+':'+fund] = val;
+  t5GroupMsRenderList(gi);
   if(state.t5_loaded) t5Redraw();
 }
 
 // ── 配息計入：組合層（該組已選標的）─────────────────────
 function t4GroupSetInclDiv(gi, val){
   const sel = [...t4Groups[gi].selected];
-  sel.forEach(fund=>{ state.t4_inclDivMap[fund] = val; });
+  sel.forEach(fund=>{ state.t4_inclDivMap[gi+':'+fund] = val; });
   t4GroupMsRenderList(gi);  // 更新勾選框外觀
   if(state.t4_loaded) t4Redraw();
 }
 function t5GroupSetInclDiv(gi, val){
   const sel = [...t5Groups[gi].selected];
-  sel.forEach(fund=>{ state.t5_inclDivMap[fund] = val; });
+  sel.forEach(fund=>{ state.t5_inclDivMap[gi+':'+fund] = val; });
   t5GroupMsRenderList(gi);
   if(state.t5_loaded) t5Redraw();
 }
@@ -2741,15 +2743,19 @@ function t5GroupSetInclDiv(gi, val){
 function t4SetInclDivAll(val){
   // 把所有已知標的都設定
   const allFunds = t4Groups.flatMap(g=>[...g.all]);
-  [...new Set(allFunds)].forEach(f=>{ state.t4_inclDivMap[f] = val; });
+  // 需依組別設定 gi+':'+fund 格式的 key
+  [0,1,2,3].forEach(gi=>{
+    t4Groups[gi].all.forEach(f=>{ state.t4_inclDivMap[gi+':'+f] = val; });
+  });
   document.getElementById('t4-btn-div-in').className  =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
   document.getElementById('t4-btn-div-out').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
   [0,1,2,3].forEach(gi=>t4GroupMsRenderList(gi));
   if(state.t4_loaded) t4Redraw();
 }
 function t5SetInclDivAll(val){
-  const allFunds = t5Groups.flatMap(g=>[...g.all]);
-  [...new Set(allFunds)].forEach(f=>{ state.t5_inclDivMap[f] = val; });
+  [0,1,2,3].forEach(gi=>{
+    t5Groups[gi].all.forEach(f=>{ state.t5_inclDivMap[gi+':'+f] = val; });
+  });
   document.getElementById('t5-btn-div-in').className  =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
   document.getElementById('t5-btn-div-out').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
   [0,1,2,3].forEach(gi=>t5GroupMsRenderList(gi));
@@ -2773,7 +2779,7 @@ function t4CalcGroupSeries(gi, allDates){
   // 每個標的：含配息再投資邏輯統一由 t4CalcDivAdjustedSeries 處理
   const fundSeries = sel.map(fund=>{
     const w = parseFloat(g.weights[fund]) || 0;
-    const series = t4CalcDivAdjustedSeries(fund, allDates);
+    const series = t4CalcDivAdjustedSeries(fund, allDates, gi);
     return { fund, w, series };
   });
 
@@ -2838,7 +2844,7 @@ function t4Redraw(){
     sel.forEach((fund, fi)=>{
       const isUSD = fund.toUpperCase().startsWith('USD');
       // 使用 t4CalcDivAdjustedSeries（已整合配息再投資邏輯）
-      const series = t4CalcDivAdjustedSeries(fund, allDates);
+      const series = t4CalcDivAdjustedSeries(fund, allDates, gi);
       const baseIdx = series.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx===-1) return;
       const base = series[baseIdx];
@@ -2881,7 +2887,7 @@ function t4Redraw(){
       if(!emaConf || !emaConf.show) return;
       const period = emaConf.period || 55;
       // 使用 t4CalcDivAdjustedSeries，納入配息再投資影響
-      const rawSeries = t4CalcDivAdjustedSeries(fund, allDates);
+      const rawSeries = t4CalcDivAdjustedSeries(fund, allDates, gi);
       const baseIdx = rawSeries.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx<0) return;
       const base = rawSeries[baseIdx];
@@ -4886,7 +4892,7 @@ function t5GroupMsRenderList(gi, filter=''){
   if(!items.length){ list.innerHTML='<div class="ms-empty">無符合項目</div>'; return; }
   list.innerHTML = items.map(v=>{
     const label  = state.t5_showFundName ? t3FundLabel(v,'t5') : v;
-    const inclD5 = state.t5_inclDivMap[v] === true;
+    const inclD5 = state.t5_inclDivMap[gi+':'+v] === true;
     const sv5    = v.replace(/'/g,"\\'");
     return `<div class="ms-item" style="gap:3px;" onclick="t5GroupToggleItem(${gi},'${sv5}')">
       <input type="checkbox" ${g.selected.has(v)?'checked':''}
@@ -4894,7 +4900,7 @@ function t5GroupMsRenderList(gi, filter=''){
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;font-size:11px;">${label}</span>
       <label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();" title="配息再投資計入">
         <input type="checkbox" ${inclD5?'checked':''}
-          onchange="t5SetInclDivFund('${sv5}',this.checked)" onclick="event.stopPropagation();"
+          onchange="t5SetInclDivFund(${gi},'${sv5}',this.checked)" onclick="event.stopPropagation();"
           style="width:11px;height:11px;accent-color:#10b981;cursor:pointer;">
         <span style="font-size:9px;color:#065f46;font-weight:700;">配息</span>
       </label>
@@ -5339,10 +5345,11 @@ function t5CalcGroupSeries(gi, allDates){
   // 各標的每日有效淨值序列（NTD）
   // 若計入配息再投資：nav × unitsMult（累積持有倍率）
   // 含義：每花1元買入時，實際上已在持有 unitsMult 倍的單位數效益
-  const inclDiv = state.t5_inclDivMap[fund] === true;
   const fundNavs = sel.map(fund=>{
-    const useFX = state.t5_fxMode==='fx';
-    const isUSD = fund.toUpperCase().startsWith('USD');
+    const useFX   = state.t5_fxMode==='fx';
+    const isUSD   = fund.toUpperCase().startsWith('USD');
+    // 個別標的配息計入設定（key 為 gi+':'+fund，預設不計入）
+    const inclDiv = state.t5_inclDivMap[gi+':'+fund] === true;
     // 取配息再投資累積倍率（計入時）
     const unitsMult = inclDiv ? t4CalcReinvestUnits(fund, allDates) : null;
     return allDates.map((date,i)=>{
