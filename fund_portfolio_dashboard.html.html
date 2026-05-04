@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.35 (整合版)
+     版本：V2.53 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -363,6 +363,50 @@
                 <button id="t3-btn-cashdiv-out" onclick="t3SetIncludeCashDiv(false)" class="btn btn-primary text-xs">不計入</button>
               </div>
             </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">💰 配息符號</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-divbars-show" onclick="t3SetShowDivBars(true)" class="btn text-xs">顯示</button>
+                <button id="t3-btn-divbars-hide" onclick="t3SetShowDivBars(false)" class="btn btn-primary text-xs">隱藏</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">累積配息線</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-divcurve-show" onclick="t3SetShowDivCurve(true)" class="btn text-xs">顯示</button>
+                <button id="t3-btn-divcurve-hide" onclick="t3SetShowDivCurve(false)" class="btn btn-primary text-xs">隱藏</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">移動明細</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-tip-show" onclick="t3SetShowTip(true)" class="btn btn-primary text-xs">顯示</button>
+                <button id="t3-btn-tip-hide" onclick="t3SetShowTip(false)" class="btn text-xs">隱藏</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">十字線</div>
+              <div class="flex gap-1">
+                <button id="t3-btn-crosshair-show" onclick="t3SetCrosshair(true)" class="btn text-xs">顯示</button>
+                <button id="t3-btn-crosshair-hide" onclick="t3SetCrosshair(false)" class="btn btn-primary text-xs">隱藏</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">組合線寬</div>
+              <div class="flex items-center gap-1">
+                <button onclick="t3AdjLineWidth(-0.5)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">−</button>
+                <span id="t3-line-width-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">1.5</span>
+                <button onclick="t3AdjLineWidth(0.5)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">+</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="text-xs text-slate-500">圖示大小</div>
+              <div class="flex items-center gap-1">
+                <button onclick="t3AdjPointSize(-1)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">−</button>
+                <span id="t3-point-size-label" style="font-size:12px;min-width:28px;text-align:center;color:#334155;font-weight:500;">1</span>
+                <button onclick="t3AdjPointSize(1)" style="font-size:13px;font-weight:600;width:22px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;line-height:1;">+</button>
+              </div>
+            </div>
             <button id="t3-btn-reload" class="btn text-xs" style="align-self:flex-end;">重新載入</button>
           </div>
           <!-- Date bar -->
@@ -379,12 +423,14 @@
               <div class="text-xs text-slate-500 mb-1">快速選擇</div>
               <div class="flex gap-1 flex-wrap">
                 <button class="qbtn" onclick="t3SetQuick(30)">近30天</button>
+                <button class="qbtn" onclick="t3SetQuick(60)">近60天</button>
                 <button class="qbtn" onclick="t3SetQuick(90)">近90天</button>
                 <button class="qbtn" onclick="t3SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t3SetQuick(365)">近1年</button>
                 <button class="qbtn" onclick="t3SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t3SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t3SetQuick(365*5)">近5年</button>
+                <button class="qbtn" onclick="t3SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t3SetQuickFull()">全部</button>
               </div>
             </div>
@@ -398,6 +444,7 @@
           <!-- Chart -->
           <div style="position:relative;width:100%;height:360px;">
             <canvas id="t3-chart"></canvas>
+            <canvas id="t3-crosshair" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
             <div id="tip"></div>
           </div>
           <!-- 時間範圍雙端拉桿 -->
@@ -438,6 +485,13 @@
                 <div class="flex gap-1">
                   <button id="t4-btn-orig" onclick="t4SetFxMode('orig')" class="btn btn-primary text-xs">原幣</button>
                   <button id="t4-btn-fx" onclick="t4SetFxMode('fx')" class="btn text-xs">反映匯率</button>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <div class="text-xs text-slate-500">Y 軸</div>
+                <div class="flex gap-1">
+                  <button id="t4-btn-ymode-pct" onclick="t4SetYMode('pct')" class="btn btn-primary text-xs">相對%</button>
+                  <button id="t4-btn-ymode-price" onclick="t4SetYMode('price')" class="btn text-xs">價格</button>
                 </div>
               </div>
               <div class="flex flex-col gap-1.5">
@@ -658,7 +712,15 @@
                 <button class="qbtn" onclick="t4SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t4SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t4SetQuick(365*5)">近5年</button>
+                <button class="qbtn" onclick="t4SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t4SetQuickFull()">全部</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5 ml-2">
+              <div class="text-xs text-slate-500">移動明細</div>
+              <div class="flex gap-1">
+                <button id="t4-btn-tip-show" onclick="t4SetShowTip(true)" class="btn btn-primary text-xs">顯示</button>
+                <button id="t4-btn-tip-hide" onclick="t4SetShowTip(false)" class="btn text-xs">隱藏</button>
               </div>
             </div>
           </div>
@@ -766,13 +828,22 @@
               <div class="text-xs text-slate-500 mb-1">快速選擇</div>
               <div class="flex gap-1 flex-wrap">
                 <button class="qbtn" onclick="t5SetQuick(30)">近30天</button>
+                <button class="qbtn" onclick="t5SetQuick(60)">近60天</button>
                 <button class="qbtn" onclick="t5SetQuick(90)">近90天</button>
                 <button class="qbtn" onclick="t5SetQuick(180)">近180天</button>
                 <button class="qbtn" onclick="t5SetQuick(365)">近1年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*2)">近2年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*3)">近3年</button>
                 <button class="qbtn" onclick="t5SetQuick(365*5)">近5年</button>
+                <button class="qbtn" onclick="t5SetQuick(365*10)">近10年</button>
                 <button class="qbtn" onclick="t5SetQuickFull()">全部</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5 ml-2">
+              <div class="text-xs text-slate-500">移動明細</div>
+              <div class="flex gap-1">
+                <button id="t5-btn-tip-show" onclick="t5SetShowTip(true)" class="btn btn-primary text-xs">顯示</button>
+                <button id="t5-btn-tip-hide" onclick="t5SetShowTip(false)" class="btn text-xs">隱藏</button>
               </div>
             </div>
 
@@ -921,13 +992,51 @@
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-2">圖表資料</label>
             <label class="flex items-center gap-2 text-xs mb-1 cursor-pointer"><input type="checkbox" id="s-filter-outliers" class="rounded" checked> 自動過濾異常淨值</label>
-
             <div class="flex items-center gap-2 text-xs">
               <span class="text-slate-500">異常門檻</span>
               <input type="number" id="s-outlier-threshold" min="5" max="80" step="5" value="30"
                 class="w-14 px-1 py-0.5 border border-slate-300 rounded text-right text-xs">
               <span class="text-slate-500">%</span>
             </div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <label class="block text-xs font-semibold text-slate-600 mb-3">第3頁籤 Y軸範圍（留空=自動）</label>
+            <table style="border-collapse:collapse;font-size:11px;width:100%;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:2px 8px 4px 0;color:#94a3b8;font-weight:500;white-space:nowrap;">軸</th>
+                  <th style="text-align:left;padding:2px 8px 4px;color:#94a3b8;font-weight:500;">說明</th>
+                  <th style="text-align:right;padding:2px 8px 4px;color:#94a3b8;font-weight:500;">最小值</th>
+                  <th style="text-align:right;padding:2px 0 4px 8px;color:#94a3b8;font-weight:500;">最大值</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding:3px 8px 3px 0;color:#64748b;white-space:nowrap;">主左軸</td>
+                  <td style="padding:3px 8px;color:#94a3b8;font-size:10px;">投資組合價值</td>
+                  <td style="padding:3px 8px;text-align:right;"><input type="number" id="s-t3-ymin" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                  <td style="padding:3px 0 3px 8px;text-align:right;"><input type="number" id="s-t3-ymax" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                </tr>
+                <tr>
+                  <td style="padding:3px 8px 3px 0;color:#f59e0b;white-space:nowrap;">💰 配息軸</td>
+                  <td style="padding:3px 8px;color:#94a3b8;font-size:10px;">單次配息金額</td>
+                  <td style="padding:3px 8px;text-align:right;"><input type="number" id="s-t3-yl2min" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #fde68a;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                  <td style="padding:3px 0 3px 8px;text-align:right;"><input type="number" id="s-t3-yl2max" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #fde68a;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                </tr>
+                <tr>
+                  <td style="padding:3px 8px 3px 0;color:#10b981;white-space:nowrap;">累積配息軸</td>
+                  <td style="padding:3px 8px;color:#94a3b8;font-size:10px;">累積配息總額</td>
+                  <td style="padding:3px 8px;text-align:right;"><input type="number" id="s-t3-yl3min" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #d1fae5;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                  <td style="padding:3px 0 3px 8px;text-align:right;"><input type="number" id="s-t3-yl3max" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #d1fae5;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                </tr>
+                <tr>
+                  <td style="padding:3px 8px 3px 0;color:#64748b;white-space:nowrap;">右軸（合計）</td>
+                  <td style="padding:3px 8px;color:#94a3b8;font-size:10px;">分開模式合計</td>
+                  <td style="padding:3px 8px;text-align:right;"><input type="number" id="s-t3-y2min" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                  <td style="padding:3px 0 3px 8px;text-align:right;"><input type="number" id="s-t3-y2max" placeholder="自動" style="width:72px;padding:2px 5px;border:1px solid #d1d5db;border-radius:4px;text-align:right;font-size:11px;" oninput="t3ApplyAxisRange()"></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-2">客戶名稱</label>
@@ -1022,10 +1131,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.35  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.53  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.35 (整合版)';
+const APP_VERSION = 'V2.53 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1142,10 +1251,26 @@ let state = {
   t3_showCashDiv: false,    // 顯示現金配息相關欄位（預設隱藏）
   t3VisMap: {},             // Tab3 圖例顯示/隱藏
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
+  t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
+  t3_showTip: true,         // Tab3 滑鼠移動明細（預設顯示）
+  t3_curDates: [],          // t3Redraw 最新的 dates（供 click handler 使用）
+  t3_curSeries: [],         // t3Redraw 最新的 seriesList
+  t4_curDates: [],          // t4Redraw 最新的 allDates
+  t4_curDatasets: [],       // t4Redraw 最新的 datasets
+  t5_curDates: [],          // t5Redraw 最新的 allDates
+  t5_curDatasets: [],       // t5Redraw 最新的 datasets
+  t4_showTip: true,         // Tab4 滑鼠移動明細（預設顯示）
+  t5_showTip: true,         // Tab5 滑鼠移動明細（預設顯示）
+  t3_lineWidth: 1.5,        // Tab3 組合線粗細（預設1.5）
+  t3_pointSize: 1,          // Tab3 折線圖示大小（預設1）
+  t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
+  t3_showCrosshair: false,  // 十字虛線（預設隱藏）
+  t3AxisRange: { yMin:'', yMax:'', yl2Min:'', yl2Max:'', yl3Min:'', yl3Max:'', y2Min:'', y2Max:'' },  // Tab3 軸刻度自訂
   showFundNameT4: true,   // Tab4 標的名稱顯示模式
   // Tab4
   t4_loaded: false,
   t4_fxMode: 'orig',
+  t4_yMode: 'pct',   // Tab4 Y 軸模式：'pct'=相對% / 'price'=原始價格
   t4_dateLocked: false,
   t4_tipLocked: false,
   t4_chart: null,
@@ -1424,36 +1549,16 @@ function parseNav(html){
   if(!html) return {nav:null,navDate:null,navChg:null,navChgPct:null};
   try{
     const doc=new DOMParser().parseFromString(html,'text/html');
-
-    // ── 方法1：優先從 DOM 結構讀取（最精確，跨瀏覽器一致）──
-    // 嘗試從表格中找「淨值」欄，避免把漲跌金額誤判
-    for(const el of doc.querySelectorAll('td,th,span,div')){
-      const t=el.textContent.trim();
-      if(t==='淨值'||t==='基準價'||t==='每單位淨值'){
-        // 找緊鄰的數值 td
-        const next=el.nextElementSibling||el.parentElement?.nextElementSibling?.querySelector('td');
-        if(next){
-          const v=parseFloat(next.textContent.replace(/,/g,'').trim());
-          if(isNavPlausible(v)){
-            const dateTxt=findDateNear(el,doc);
-            return {nav:v,navDate:dateTxt,navChg:null,navChgPct:null};
-          }
-        }
-      }
-    }
-
-    // ── 方法2：從「近30日淨值」區段解析 ──
-    const txt=(doc.body.textContent||'').replace(/[\r\n\t]+/g,' ').replace(/ {2,}/g,' ');
+    const txt=(doc.body.textContent||'').replace(/\s+/g,' ');
     const idx=txt.indexOf('近30日淨值');
     if(idx!==-1){
       const seg=txt.substring(idx,idx+3000);
-      // 明確要求淨值 > 0.5（排除漲跌金額，通常 < 0.5）
-      const re=/(\d{1,2}[\/-]\d{1,2})\s+([0-9]+\.[0-9]+)/g;
+      const re=/(\d{1,2}[\/-]\d{1,2})\s+(\d+\.\d+)/g;
       let cands=[],m;
       while((m=re.exec(seg))!==null){
         const raw=m[1], val=parseFloat(m[2]);
         const fd=raw.length<=5?resolveDateWithYear(...raw.split(/[\/-]/)):raw.replace(/-/g,'/');
-        if(isNavPlausible(val)) cands.push({date:fd,nav:val});
+        if(val>0) cands.push({date:fd,nav:val});
       }
       if(cands.length){
         cands.sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -1462,50 +1567,12 @@ function parseNav(html){
         return {nav:lat.nav,navDate:lat.date,navChg:chg,navChgPct:pct};
       }
     }
-
-    // ── 方法3：meta og:description ──
     const meta=doc.querySelector('meta[property="og:description"]');
-    if(meta?.content){
-      const m=meta.content.match(/淨值[:：\s]*([\d.]+)/);
-      if(m&&isNavPlausible(parseFloat(m[1]))){
-        const dm=meta.content.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||meta.content.match(/(\d{1,2}[\/-]\d{1,2})/);
-        return {nav:parseFloat(m[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null};
-      }
-    }
-
-    // ── 方法4：全文比對「淨值」附近的數字，過濾合理範圍 ──
-    const m2=txt.match(/淨值(?:(?!淨值).){0,80}?([0-9]+\.[0-9]{2,4})/);
-    if(m2&&isNavPlausible(parseFloat(m2[1]))){
-      const dm=txt.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||txt.match(/(\d{1,2}[\/-]\d{1,2})/);
-      return {nav:parseFloat(m2[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null};
-    }
-  }catch(e){ console.warn('[parseNav]',e); }
+    if(meta?.content){ const m=meta.content.match(/淨值[:：\s]*([\d.]+)/); if(m){ const dm=meta.content.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||meta.content.match(/(\d{1,2}[\/-]\d{1,2})/); return {nav:parseFloat(m[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null}; } }
+    const m2=txt.match(/淨值(?:(?!淨值).){0,100}?(\d+\.\d{2,4})/);
+    if(m2){ const dm=txt.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/)||txt.match(/(\d{1,2}[\/-]\d{1,2})/); return {nav:parseFloat(m2[1]),navDate:dm?dm[1].length<=5?resolveDateWithYear(...dm[1].split(/[\/-]/)):dm[1].replace(/-/g,'/'):null,navChg:null,navChgPct:null}; }
+  }catch(e){}
   return {nav:null,navDate:null,navChg:null,navChgPct:null};
-}
-
-// 判斷數值是否在合理的淨值範圍內（0.5 ~ 99999）
-// 漲跌金額通常很小（< 0.5 或帶正負號）；淨值通常 >= 0.5
-function isNavPlausible(v){
-  return typeof v==='number' && !isNaN(v) && v >= 0.5 && v < 99999;
-}
-
-// 在指定元素附近搜尋日期文字
-function findDateNear(el, doc){
-  const row = el.closest('tr');
-  if(row){
-    const txt = row.textContent;
-    const m = txt.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/) || txt.match(/(\d{1,2}[\/-]\d{1,2})/);
-    if(m) return m[1].length<=5 ? resolveDateWithYear(...m[1].split(/[\/-]/)) : m[1].replace(/-/g,'/');
-  }
-  // 往上找最近的日期
-  const bodyTxt = doc.body.textContent||'';
-  const pos = bodyTxt.indexOf(el.textContent.trim());
-  if(pos>0){
-    const nearby = bodyTxt.substring(Math.max(0,pos-200), pos+200);
-    const m2 = nearby.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/);
-    if(m2) return m2[1].replace(/-/g,'/');
-  }
-  return null;
 }
 
 function parseDiv(html){
@@ -1797,7 +1864,7 @@ function cellHTML(f, key, tab){
 
 function nameCell(f){
   const dot=typeof f.nav==='number'&&f.hasDividends?'bg-green-500':typeof f.nav==='number'?'bg-amber-400':(f.urlNav||f.urlDiv)?'bg-slate-300 animate-pulse':'bg-red-300';
-  const nm=f.urlInfo?`<a href="${f.urlInfo}" target="_blank" class="text-blue-600 hover:underline text-xs leading-snug">${f.name} ↗</a>`:`<span class="text-slate-500 text-xs leading-snug">${f.name}</span>`;
+  const nm=f.urlNav?`<a href="${f.urlNav}" target="_blank" class="text-blue-600 hover:underline text-xs leading-snug">${f.name} ↗</a>`:`<span class="text-slate-500 text-xs leading-snug">${f.name}</span>`;
   return `<div class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${dot}"></div><div><div class="font-medium text-slate-900 text-xs">${f.code}</div>${nm}</div></div>`;
 }
 function navCell(f,mn){
@@ -2049,6 +2116,12 @@ function openSettings(){
   document.getElementById('s-sticky-nav').checked=state.stickyNav;
   document.getElementById('s-filter-outliers').checked=state.filterOutliers;
   document.getElementById('s-outlier-threshold').value=Math.round(state.outlierThreshold*100);
+  const ar = state.t3AxisRange || {};
+  const setV = (id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
+  setV('s-t3-ymin',  ar.yMin);  setV('s-t3-ymax',  ar.yMax);
+  setV('s-t3-yl2min',ar.yl2Min);setV('s-t3-yl2max',ar.yl2Max);
+  setV('s-t3-yl3min',ar.yl3Min);setV('s-t3-yl3max',ar.yl3Max);
+  setV('s-t3-y2min', ar.y2Min); setV('s-t3-y2max', ar.y2Max);
   const nav=document.getElementById('main-nav-bar');
   if(nav){ if(state.stickyNav){ nav.classList.add('sticky','top-0','z-40'); } else { nav.classList.remove('sticky','top-0','z-40'); } }
   document.getElementById('s-freeze-col').checked=state.freezeNameCol;
@@ -2466,6 +2539,13 @@ function t4ToggleLock(){
   }
 }
 
+function t4SetYMode(mode){
+  state.t4_yMode = mode;
+  document.getElementById('t4-btn-ymode-pct').className   = mode==='pct'   ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-ymode-price').className = mode==='price' ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t4_loaded) t4Redraw();
+}
+
 function t4SetFxMode(mode){
   state.t4_fxMode = mode;
   document.getElementById('t4-btn-orig').className = mode==='orig'?'btn btn-primary text-xs':'btn text-xs';
@@ -2702,9 +2782,13 @@ function t4Redraw(){
       const baseIdx = series.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx===-1) return;
       const base = series[baseIdx];
-      const data = series.map((v,i)=>
-        i<baseIdx ? null : (v===null||v===undefined) ? null : parseFloat(((v/base)*100).toFixed(4))
-      );
+      const isPriceMode = state.t4_yMode === 'price';
+      const data = series.map((v,i)=>{
+        if(i<baseIdx||v===null||v===undefined) return null;
+        return isPriceMode
+          ? parseFloat(v.toFixed(4))                       // 原始價格
+          : parseFloat(((v/base)*100).toFixed(4));         // 相對指數
+      });
       // 每個成份標的：不同虛線 + 不同端點，間隔顯示端點避免過密
       const dashIdx   = fi % DASH_PATTERNS.length;
       const ptStyle   = POINT_STYLES[(gi * 3 + fi) % POINT_STYLES.length];
@@ -2741,9 +2825,13 @@ function t4Redraw(){
       const baseIdx = rawSeries.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx<0) return;
       const base = rawSeries[baseIdx];
-      const idxSeries = rawSeries.map((v,i)=>
-        i<baseIdx?null:(v===null?null:parseFloat(((v/base)*100).toFixed(4)))
-      );
+      const isPriceModeEma = state.t4_yMode === 'price';
+      const idxSeries = rawSeries.map((v,i)=>{
+        if(i<baseIdx||v===null) return null;
+        return isPriceModeEma
+          ? parseFloat(v.toFixed(4))
+          : parseFloat(((v/base)*100).toFixed(4));
+      });
       const emaSeries = calcEMA(idxSeries, period);
       const emaLabel  = `${T4_GROUP_NAMES[gi]}：EMA${period}(${t3FundLabel(fund,'t4')})`;
       datasets.push({
@@ -2758,9 +2846,9 @@ function t4Redraw(){
       });
     });
 
-    // 組合加權曲線（粗實線，無端點標記）
+    // 組合加權曲線：價格模式下不顯示（各標的幣別/面額不同，加權無意義）
     const totW = sel.reduce((s,v)=>s+(parseFloat(g.weights[v])||0), 0);
-    if(sel.length > 1 || totW > 0){
+    if((sel.length > 1 || totW > 0) && state.t4_yMode !== 'price'){
       const groupData = t4CalcGroupSeries(gi, allDates);
       if(groupData){
         const groupLabel = `${T4_GROUP_NAMES[gi]} 組合`;
@@ -2828,18 +2916,62 @@ function t4Redraw(){
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t4XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
         y:{
-          ticks:{ font:{size:11},color:'#888', callback:v=>`${v.toFixed(1)}%` },
+          ticks:{ font:{size:11},color:'#888',
+            callback: state.t4_yMode==='price'
+              ? v=>{ if(v>=1e4) return `${Math.round(v/1e3)}K`; return v.toFixed(2); }
+              : v=>`${v.toFixed(1)}%`
+          },
           grid:{ color:'rgba(0,0,0,0.05)' },
-          title:{ display:true, text:'相對起始日（%）', font:{size:11}, color:'#888' }
+          title:{ display:true,
+            text: state.t4_yMode==='price'
+              ? (state.t4_fxMode==='fx' ? '價格（NT$）' : '價格（原幣）')
+              : '相對起始日（%）',
+            font:{size:11}, color:'#888'
+          }
         }
       }
     }
   });
+  // 每次 Redraw 更新最新資料
+  state.t4_curDates    = allDates;
+  state.t4_curDatasets = datasets;
+  // 點擊顯示明細——每次 Redraw 重新綁定確保資料最新
+  (()=>{
+    const cvs = document.getElementById('t4-chart');
+    if(!cvs) return;
+    if(cvs._t4ClickHandler) cvs.removeEventListener('click', cvs._t4ClickHandler);
+    cvs._t4ClickHandler = e=>{
+      if(state.t4_showTip || !state.t4_chart) return;
+      const pts = state.t4_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      state.t4_tipLocked = false;
+      const rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t4_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - rect.left,
+          caretY: e.clientY - rect.top,
+        },
+        chart: state.t4_chart
+      };
+      state.t4_showTip = true;
+      t4ShowTip(fakeCtx, state.t4_curDates, state.t4_curDatasets);
+      state.t4_showTip = false;
+      state.t4_tipLocked = true;
+    };
+    cvs.addEventListener('click', cvs._t4ClickHandler);
+  })();
 }
 
 function t4ShowTip(ctx, dates, datasets){
   const box = document.getElementById('t4-tip');
   if(ctx.tooltip.opacity===0){ if(!state.t4_tipLocked) box.style.display='none'; return; }
+  if(!state.t4_showTip && !state.t4_tipLocked){ box.style.display='none'; return; }
   if(state.t4_tipLocked) return;
   const idx  = ctx.tooltip.dataPoints[0].dataIndex;
   const date = dates[idx];
@@ -2855,9 +2987,16 @@ function t4ShowTip(ctx, dates, datasets){
       if(ds.isEma) return;  // EMA 線不顯示在 tooltip
       const val = ds.data[idx];
       if(val===null||val===undefined) return;
-      const diff   = val - 100;
-      const diffStr= (diff>=0?'+':'')+diff.toFixed(2)+'%';
-      const col    = diff>=0?'#1D9E75':'#c0392b';
+      const isPriceModeTip = state.t4_yMode === 'price';
+      let diffStr, col;
+      if(isPriceModeTip){
+        diffStr = val>=1e4 ? val.toLocaleString('en-US',{maximumFractionDigits:2}) : val.toFixed(4);
+        col = '#475569';
+      } else {
+        const diff = val - 100;
+        diffStr = (diff>=0?'+':'')+diff.toFixed(2)+'%';
+        col = diff>=0?'#1D9E75':'#c0392b';
+      }
       const bold   = ds.isGroup ? 'font-weight:600;' : '';
       // 配置比例
       let weightStr = '';
@@ -2999,6 +3138,7 @@ function t4SyncGroupBtns(){
       bf.style.opacity=allH?'0.4':'1'; bf.style.textDecoration=allH?'line-through':'none';
     }
   });
+
 }
 
 function t4GroupToggleFundsVis(gi){
@@ -3333,6 +3473,100 @@ function t3SetIncludeCashDiv(val){
   if(state.t3_loaded) t3Redraw();
 }
 
+// ── 繪製單枚立體金幣（canvas 2D）──────────────────────
+function t3DrawCoin(ctx, cx, baseY, coinW, coinH){
+  // coinW = 橢圓寬；coinH = 頂面橢圓短軸 / 側面高度
+  const rx = coinW / 2;
+
+  // 1. 側面（梯形漸層，深金色，左亮右暗）
+  const sideTop    = baseY - coinH;
+  const sideBot    = baseY;
+  const grad = ctx.createLinearGradient(cx-rx, 0, cx+rx, 0);
+  grad.addColorStop(0,   '#FFD700');
+  grad.addColorStop(0.25,'#FFC200');
+  grad.addColorStop(0.5, '#E6A800');
+  grad.addColorStop(0.75,'#C88000');
+  grad.addColorStop(1,   '#A06000');
+  ctx.beginPath();
+  ctx.ellipse(cx, sideBot,  rx, coinH*0.45, 0, 0, Math.PI);   // 底部半橢圓
+  ctx.ellipse(cx, sideTop,  rx, coinH*0.45, 0, Math.PI, 0);   // 頂部半橢圓
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // 2. 頂面橢圓（亮金色）
+  const topGrad = ctx.createRadialGradient(cx-rx*0.2, sideTop, 0, cx, sideTop, rx);
+  topGrad.addColorStop(0,   '#FFED80');
+  topGrad.addColorStop(0.5, '#FFD700');
+  topGrad.addColorStop(1,   '#E6A800');
+  ctx.beginPath();
+  ctx.ellipse(cx, sideTop, rx, coinH*0.45, 0, 0, Math.PI*2);
+  ctx.fillStyle = topGrad;
+  ctx.fill();
+
+  // 3. 頂面紋路：淺色小橢圓（模擬銅板紋）
+  ctx.beginPath();
+  ctx.ellipse(cx, sideTop, rx*0.65, coinH*0.3, 0, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,180,0.5)';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  // 4. 頂面亮點（高光）
+  ctx.beginPath();
+  ctx.ellipse(cx-rx*0.25, sideTop-coinH*0.1, rx*0.25, coinH*0.15, -0.3, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,220,0.45)';
+  ctx.fill();
+}
+
+// ── Tab3 線寬調整 ────────────────────────────────────
+function t3AdjLineWidth(delta){
+  state.t3_lineWidth = Math.max(0.5, Math.min(8, parseFloat(((state.t3_lineWidth||2)+delta).toFixed(1))));
+  const lbl = document.getElementById('t3-line-width-label');
+  if(lbl) lbl.textContent = state.t3_lineWidth.toFixed(1);
+  if(state.t3_loaded) t3Redraw();
+}
+
+// ── Tab3 圖示大小調整 ────────────────────────────────
+function t3AdjPointSize(delta){
+  state.t3_pointSize = Math.max(0, Math.min(12, (state.t3_pointSize||2)+delta));
+  const lbl = document.getElementById('t3-point-size-label');
+  if(lbl) lbl.textContent = state.t3_pointSize;
+  if(state.t3_loaded) t3Redraw();
+}
+
+function t3SetShowTip(val){
+  state.t3_showTip = val;
+  document.getElementById('t3-btn-tip-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-tip-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){ const b=document.getElementById('tip'); if(b) b.style.display='none'; state.t3_tipLocked=false; }
+}
+function t4SetShowTip(val){
+  state.t4_showTip = val;
+  document.getElementById('t4-btn-tip-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-tip-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){ const b=document.getElementById('t4-tip'); if(b) b.style.display='none'; state.t4_tipLocked=false; }
+}
+function t5SetShowTip(val){
+  state.t5_showTip = val;
+  document.getElementById('t5-btn-tip-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t5-btn-tip-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){ const b=document.getElementById('t5-tip'); if(b) b.style.display='none'; state.t5_tipLocked=false; }
+}
+
+function t3SetShowDivCurve(val){
+  state.t3_showDivCurve = val;
+  document.getElementById('t3-btn-divcurve-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-divcurve-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t3_loaded) t3Redraw();
+}
+
+function t3SetShowDivBars(val){
+  state.t3_showDivBars = val;
+  document.getElementById('t3-btn-divbars-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-divbars-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t3_loaded) t3Redraw();
+}
+
 function t3SetShowCashDiv(val){
   state.t3_showCashDiv = val;
   document.getElementById('t3-btn-cashdiv-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
@@ -3619,18 +3853,56 @@ function t3Redraw(){
   t3RenderCards(seriesList, totalVals, dates, seriesList.map(sr=>sr.cashDivSnap));
   t3RenderLegend(seriesList);
   t3InitSlider(dates, firstTxDate);
+  t3BindCrosshair();
+  // 每次 Redraw 都更新最新資料（供 click handler 取用）
+  state.t3_curDates  = dates;
+  state.t3_curSeries = seriesList;
+  // 點擊顯示明細（移動明細隱藏模式用）—— 每次 Redraw 重新綁定
+  (()=>{
+    const cvs = document.getElementById('t3-chart');
+    if(!cvs) return;
+    // 移除舊的 click handler，每次重新綁定確保 closure 是最新資料
+    if(cvs._t3ClickHandler) cvs.removeEventListener('click', cvs._t3ClickHandler);
+    cvs._t3ClickHandler = e=>{
+      if(state.t3_showTip || !state.t3_chart) return;
+      const pts = state.t3_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      state.t3_tipLocked = false;
+      const rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t3_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - rect.left,
+          caretY: e.clientY - rect.top,
+        },
+        chart: state.t3_chart
+      };
+      state.t3_showTip = true;
+      t3ShowTip(fakeCtx, state.t3_curDates, state.t3_curSeries);
+      state.t3_showTip = false;
+      state.t3_tipLocked = true;
+    };
+    cvs.addEventListener('click', cvs._t3ClickHandler);
+  })();
 
   const FILL_COLORS = ['rgba(24,95,165,0.07)','rgba(29,158,117,0.07)','rgba(216,90,48,0.07)',
     'rgba(155,89,182,0.07)','rgba(186,117,23,0.07)','rgba(153,53,86,0.07)'];
 
+  const t3lw = state.t3_lineWidth || 2;
+  const t3ps = state.t3_pointSize || 2;
   const datasets = seriesList.map((sr,i)=>({
     label: sr.key,
     data: sr.vals,
     borderColor: sr.color,
     backgroundColor: FILL_COLORS[i % FILL_COLORS.length],
-    borderWidth: 2,
-    pointRadius: 2,
-    pointHoverRadius: 6,
+    borderWidth: t3lw,
+    pointRadius: t3ps,
+    pointHoverRadius: Math.max(t3ps+3, 6),
     fill: seriesList.length === 1,
     tension: 0.3,
     hidden: state.t3VisMap[sr.key] === false,
@@ -3652,15 +3924,137 @@ function t3Redraw(){
     });
   }
 
+  // ── 配息柱狀圖：各組各一個顏色，映射到第二左軸 yLeft2 ──
+  let maxSingleDiv = 0;  // 找最大單次配息金額，用於設定刻度上限
+  if(state.t3_showDivBars){
+    seriesList.forEach(sr=>{
+      if(!sr.cashDivSnap) return;
+      dates.forEach((date,di)=>{
+        const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
+        const cdPrev = di>0 ? (sr.cashDivSnap[dates[di-1]] || {total_ntd:0}) : {total_ntd:0};
+        const delta  = cd.total_ntd - cdPrev.total_ntd;
+        if(delta > maxSingleDiv) maxSingleDiv = delta;
+      });
+    });
+
+    // 建立隱形 scatter dataset 供 tooltip/hitTest 使用（不顯示，以 plugin 手繪金幣）
+    seriesList.forEach(sr=>{
+      if(!sr.cashDivSnap) return;
+      const scatterData = dates.map((date,di)=>{
+        const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
+        const cdPrev = di>0 ? (sr.cashDivSnap[dates[di-1]] || {total_ntd:0}) : {total_ntd:0};
+        const delta  = cd.total_ntd - cdPrev.total_ntd;
+        return delta > 0 ? delta : null;
+      });
+      datasets.push({
+        type: 'scatter',
+        label: `${sr.key} 配息`,
+        data: scatterData,
+        pointStyle: 'circle',
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        hitRadius: 30,
+        showLine: false,
+        yAxisID: 'yLeft2',
+        hidden: state.t3VisMap[`${sr.key} 配息`] === false,
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
+      });
+    });
+  }
+
+  // ── 累積配息曲線 ──
+  let maxCumDiv = 0;
+  if(state.t3_showDivCurve){
+    seriesList.forEach(sr=>{
+      if(!sr.cashDivSnap) return;
+      dates.forEach(date=>{
+        const v = (sr.cashDivSnap[date]||{total_ntd:0}).total_ntd;
+        if(v > maxCumDiv) maxCumDiv = v;
+      });
+      const cumData = dates.map(date=>{
+        const v = (sr.cashDivSnap[date]||{total_ntd:0}).total_ntd;
+        return state.t3_ccy==='NTD' ? v : v/t3GetFX(date);
+      });
+      datasets.push({
+        type: 'line',
+        label: `${sr.key} 累積配息`,
+        data: cumData,
+        borderColor: sr.color,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [6,3],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        tension: 0.2,
+        yAxisID: 'yLeft3',
+        hidden: state.t3VisMap[`${sr.key} 累積配息`] === false,
+      });
+    });
+  }
+
+  // 計算左軸留白：最小值往下延伸 10%
+  const allLineVals = datasets
+    .filter(d=>d.type !== 'bar' && d.type !== 'scatter' && d.yAxisID !== 'yRight')
+    .flatMap(d=>d.data||[]).filter(v=>v!==null&&v!==undefined);
+  const lineMin = allLineVals.length ? Math.min(...allLineVals) : 0;
+  const lineMax = allLineVals.length ? Math.max(...allLineVals) : 0;
+  const linePad = (lineMax - lineMin) * 0.1;
+  const yMinWithPad = lineMin - linePad;
+
   if(state.t3_chart) state.t3_chart.destroy();
   const t3XTickCb = function(val){
     const date = dates[val]; if(!date) return '';
     return date;  // 顯示 YYYY/MM/DD（即原始格式）
   };
 
+  // 金幣 plugin：用 closure + chartArea.bottom 作基線，確保在可見範圍內
+  const _coinAmountsByGroup = seriesList.map(sr=>{
+    if(!sr.cashDivSnap) return { key:sr.key, color:sr.color, amounts:[] };
+    const amounts = dates.map((date,di)=>{
+      const cd     = sr.cashDivSnap[date]     || {total_ntd:0};
+      const cdPrev = di>0?(sr.cashDivSnap[dates[di-1]]||{total_ntd:0}):{total_ntd:0};
+      const delta  = cd.total_ntd - cdPrev.total_ntd;
+      return delta > 0 ? delta : null;
+    });
+    return { key:sr.key, color:sr.color, amounts };
+  });
+  const _allValidAmts = _coinAmountsByGroup.flatMap(g=>g.amounts.filter(v=>v!==null&&v>0));
+  const _coinGlobalMax = _allValidAmts.length ? Math.max(..._allValidAmts) : 0;
+
+  const _t3CoinPlugin = {
+    id: 't3CoinPlugin',
+    beforeDatasetsDraw(chart){
+      if(!state.t3_showDivBars || !_coinGlobalMax) return;
+      const cx2  = chart.ctx;
+      const area = chart.chartArea;
+      const xScale = chart.scales.x;
+      // 直接用 chartArea.bottom 作基線，100% 確保在可見範圍內
+      const baseY  = area.bottom;
+      const MAX_COINS=10, CW=20, CH=4, STEP=5;
+
+      _coinAmountsByGroup.forEach(gd=>{
+        if(state.t3VisMap[`${gd.key} 配息`]===false) return;
+        gd.amounts.forEach((amt,di)=>{
+          if(!amt) return;
+          const xPx = xScale.getPixelForValue(di);
+          if(xPx < area.left || xPx > area.right) return;
+          const coins = Math.max(1, Math.round((amt/_coinGlobalMax)*MAX_COINS));
+          cx2.save();
+          for(let c=0; c<coins; c++){
+            t3DrawCoin(cx2, xPx, baseY - c*STEP, CW, CH);
+          }
+          cx2.restore();
+        });
+      });
+    }
+  };
+
   state.t3_chart = new Chart(document.getElementById('t3-chart'), {
     type: 'line',
     data: { labels: dates.map((_,i)=>i), datasets },
+    plugins: [_t3CoinPlugin],
     options:{
       responsive: true, maintainAspectRatio: false,
       interaction:{ mode:'index', intersect:false },
@@ -3670,10 +4064,57 @@ function t3Redraw(){
       },
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t3XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
-        y:{ position:'left', ticks:{font:{size:11},color:'#888',callback:v=>t3FmtAxis(v)}, grid:{color:'rgba(0,0,0,0.05)'} },
+        y:{
+          position:'left',
+          min: (() => {
+            const manual = state.t3AxisRange.yMin !== '' ? parseFloat(state.t3AxisRange.yMin) : NaN;
+            if(!isNaN(manual)) return manual;
+            return state.t3_showDivBars && linePad > 0 ? yMinWithPad : undefined;
+          })(),
+          max: (() => { const m=parseFloat(state.t3AxisRange.yMax); return isNaN(m)?undefined:m; })(),
+          ticks:{font:{size:11},color:'#888',callback:v=>t3FmtAxis(v)},
+          grid:{color:'rgba(0,0,0,0.05)'}
+        },
+        yLeft2:{
+          position:'left',
+          display: state.t3_showDivBars && maxSingleDiv > 0,
+          min: (()=>{ const m=parseFloat(state.t3AxisRange.yl2Min); return isNaN(m)?0:m; })(),
+          max: (()=>{ const m=parseFloat(state.t3AxisRange.yl2Max); return isNaN(m)?maxSingleDiv*10:m; })(),
+          ticks:{
+            font:{size:10}, color:'#f59e0b',
+            callback: v=>{
+              if(v===0) return '0';
+              if(v>=1e6) return `${(v/1e6).toFixed(1)}M`;
+              if(v>=1e4) return `${Math.round(v/1e3)}K`;
+              return Math.round(v).toLocaleString();
+            }
+          },
+          title:{ display:true, text:'配息(NT$)', font:{size:10}, color:'#f59e0b' },
+          grid:{ drawOnChartArea:false },
+          offset: true,
+        },
+        yLeft3:{
+          position:'left',
+          display: state.t3_showDivCurve && maxCumDiv > 0,
+          min: (()=>{ const m=parseFloat(state.t3AxisRange.yl3Min); return isNaN(m)?0:m; })(),
+          max: (()=>{ const m=parseFloat(state.t3AxisRange.yl3Max); return isNaN(m)?undefined:m; })(),
+          ticks:{
+            font:{size:10}, color:'#10b981',
+            callback: v=>{
+              if(v>=1e6) return `${(v/1e6).toFixed(1)}M`;
+              if(v>=1e4) return `${Math.round(v/1e3)}K`;
+              return Math.round(v).toLocaleString();
+            }
+          },
+          title:{ display:true, text:'累積配息', font:{size:10}, color:'#10b981' },
+          grid:{ drawOnChartArea:false },
+          offset: true,
+        },
         yRight:{
           position:'right',
           display: state.t3_mode==='split' && seriesList.length>1 && state.t3_showTotal,
+          min: (() => { const m=parseFloat(state.t3AxisRange.y2Min); return isNaN(m)?undefined:m; })(),
+          max: (() => { const m=parseFloat(state.t3AxisRange.y2Max); return isNaN(m)?undefined:m; })(),
           ticks:{ font:{size:11}, color:'#666', callback:v=>t3FmtAxis(v) },
           grid:{ drawOnChartArea:false },
           title:{ display:true, text:'合計', font:{size:11}, color:'#666' }
@@ -3686,8 +4127,31 @@ function t3Redraw(){
 function t3ShowTip(ctx, dates, seriesList){
   const box = document.getElementById('tip');
   if(ctx.tooltip.opacity===0){ if(!state.t3_tipLocked) box.style.display='none'; return; }
+  if(!state.t3_showTip && !state.t3_tipLocked){ box.style.display='none'; return; }
   if(state.t3_tipLocked) return;
-  const idx     = ctx.tooltip.dataPoints[0].dataIndex;
+  const dps = ctx.tooltip.dataPoints;
+  // 若點到 💰 配息散點，顯示配息金額
+  const divHit = dps.find(dp=>{
+    const ds = state.t3_chart?.data?.datasets?.[dp.datasetIndex];
+    return ds && ds.label && ds.label.endsWith(' 配息') && dp.raw!==null;
+  });
+  if(divHit){
+    const ds   = state.t3_chart.data.datasets[divHit.datasetIndex];
+    const amt  = divHit.raw;
+    const sym  = state.t3_ccy==='NTD' ? 'NT$' : 'US$';
+    const dispAmt = state.t3_ccy==='NTD' ? amt : amt/t3GetFX(dates[divHit.dataIndex]);
+    box.innerHTML=`<div style="font-weight:500;font-size:13px;color:#92400e;margin-bottom:4px;">💰 ${ds.label}</div>
+      <div style="font-size:12px;color:#1a1a1a;font-weight:600;">${sym}${Math.round(dispAmt).toLocaleString()}</div>`;
+    box.style.display='block';
+    const canvas=document.getElementById('t3-chart');
+    const cw=canvas.clientWidth,ch=canvas.clientHeight;
+    const bw=180,bh=box.offsetHeight||60;
+    let lft=ctx.tooltip.caretX+14; if(lft+bw>cw) lft=ctx.tooltip.caretX-bw-10;
+    let top=ctx.tooltip.caretY-20; if(top+bh>ch) top=ch-bh-8; if(top<0) top=4;
+    box.style.left=lft+'px'; box.style.top=top+'px';
+    return;
+  }
+  const idx     = dps[0].dataIndex;
   const date    = dates[idx];
   const prevDate= idx > 0 ? dates[idx-1] : null;
   const fx      = t3GetFX(date);
@@ -3818,6 +4282,15 @@ function t3ShowTip(ctx, dates, seriesList){
 
     // ── 現金配息區塊 ──
     if(state.t3_showCashDiv && sr.cashDivSnap){
+      // 找最近一次配息日及金額（往前掃找累積有增加的日期）
+      let lastDivAmt = 0, lastDivDate = '';
+      for(let di2 = idx; di2 >= 1; di2--){
+        const d2 = dates[di2], d2p = dates[di2-1];
+        const cur2  = (sr.cashDivSnap[d2] ||{total_ntd:0}).total_ntd;
+        const prev2 = (sr.cashDivSnap[d2p]||{total_ntd:0}).total_ntd;
+        const delta = cur2 - prev2;
+        if(delta > 0){ lastDivAmt = delta; lastDivDate = d2; break; }
+      }
       const cd     = sr.cashDivSnap[date]     || {ntd:0, usd:0, total_ntd:0};
       const cdPrev = prevDate ? (sr.cashDivSnap[prevDate]||{ntd:0,usd:0,total_ntd:0}) : null;
       const fxNow  = t3GetFX(date);
@@ -3843,6 +4316,12 @@ function t3ShowTip(ctx, dates, seriesList){
         html += `<div style="font-size:11px;font-weight:600;color:#92400e;display:flex;justify-content:space-between;margin-top:2px;border-top:1px solid #fde68a;padding-top:2px;">
           <span>合計（NTD）</span><span>${sym}${t3FmtN(totalDisp)}${totArrow}</span></div>`;
         textLines.push(`  配息合計：${sym}${t3FmtN(totalDisp)}`);
+        if(lastDivAmt > 0){
+          const lastDisp = state.t3_ccy==='NTD' ? lastDivAmt : lastDivAmt / t3GetFX(lastDivDate);
+          html += `<div style="font-size:10px;color:#92400e;display:flex;justify-content:space-between;margin-top:2px;">
+            <span>最近一次配息</span><span>${sym}${t3FmtN(lastDisp)} (${lastDivDate})</span></div>`;
+          textLines.push(`  最近一次：${sym}${t3FmtN(lastDisp)} (${lastDivDate})`);
+        }
       }
       html += `</div>`;
     }
@@ -3946,17 +4425,35 @@ function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
 }
 
 function t3RenderLegend(seriesList){
-  document.getElementById('t3-legend').innerHTML = seriesList.map(sr=>{
-    const hidden  = state.t3VisMap[sr.key] === false;
+  // 折線圖例
+  let items = seriesList.map(sr=>({ key: sr.key, color: sr.color, isBar: false }));
+  // 配息 💰 符號圖例
+  if(state.t3_showDivBars){
+    seriesList.forEach(sr=>{
+      if(sr.cashDivSnap) items.push({ key:`${sr.key} 配息`, color: sr.color, isBar: true });
+    });
+  }
+  // 累積配息線圖例
+  if(state.t3_showDivCurve){
+    seriesList.forEach(sr=>{
+      if(sr.cashDivSnap) items.push({ key:`${sr.key} 累積配息`, color: sr.color, isDivCurve: true });
+    });
+  }
+  document.getElementById('t3-legend').innerHTML = items.map(item=>{
+    const hidden  = state.t3VisMap[item.key] === false;
     const opacity = hidden ? '0.35' : '1';
-    const safe    = sr.key.replace(/'/g,"\\'");
+    const safe    = item.key.replace(/'/g,"\'");
+    const icon    = item.isBar
+      ? `<span style="font-size:14px;line-height:1;">💰</span>`
+      : item.isDivCurve
+        ? `<span style="width:20px;height:0;border-top:2px dashed ${item.color};display:inline-block;vertical-align:middle;"></span>`
+        : `<span style="width:20px;height:3px;border-radius:2px;background:${item.color};display:inline-block;"></span>`;
     return `<span onclick="t3ToggleVis('${safe}')"
       style="display:flex;align-items:center;gap:5px;font-size:12px;color:#555;cursor:pointer;
         opacity:${opacity};padding:2px 6px;border-radius:4px;margin-bottom:2px;
         border:1px solid ${hidden?'#e2e8f0':'transparent'};
         background:${hidden?'#f8fafc':'transparent'};" title="${hidden?'點擊顯示':'點擊隱藏'}">
-      <span style="width:20px;height:3px;border-radius:2px;background:${sr.color};display:inline-block;"></span>
-      ${sr.key}
+      ${icon}${item.key}
     </span>`;
   }).join('');
 }
@@ -3979,6 +4476,163 @@ function t3ToggleVis(label){
     state.t3_chart.update();
   }
   t3RenderLegend(state.t3_chart ? state.t3_chart.data.datasets.map(d=>({ key:d.label, color:d.borderColor })) : []);
+}
+
+// ── 點選圖表外區域關閉 tooltip ──────────────────────────
+document.addEventListener('click', e=>{
+  const tip3=document.getElementById('tip');
+  const tip4=document.getElementById('t4-tip');
+  const tip5=document.getElementById('t5-tip');
+  const c3=document.getElementById('t3-chart');
+  const c4=document.getElementById('t4-chart');
+  const c5=document.getElementById('t5-chart');
+  // Tab3
+  if(tip3 && tip3.style.display!=='none'){
+    if(!tip3.contains(e.target) && e.target!==c3){
+      tip3.style.display='none'; state.t3_tipLocked=false;
+    }
+  }
+  // Tab4
+  if(tip4 && tip4.style.display!=='none'){
+    if(!tip4.contains(e.target) && e.target!==c4){
+      tip4.style.display='none'; state.t4_tipLocked=false;
+    }
+  }
+  // Tab5
+  if(tip5 && tip5.style.display!=='none'){
+    if(!tip5.contains(e.target) && e.target!==c5){
+      tip5.style.display='none'; state.t5_tipLocked=false;
+    }
+  }
+});
+
+// ── 十字線 ──────────────────────────────────────────────
+function t3SetCrosshair(val){
+  state.t3_showCrosshair = val;
+  document.getElementById('t3-btn-crosshair-show').className =  val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-crosshair-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(!val){
+    // 清除 overlay
+    const oc = document.getElementById('t3-crosshair');
+    if(oc){ const ctx=oc.getContext('2d'); ctx.clearRect(0,0,oc.width,oc.height); }
+  }
+}
+
+function t3DrawCrosshair(chart, mouseX, mouseY){
+  const oc = document.getElementById('t3-crosshair');
+  if(!oc || !state.t3_showCrosshair) return;
+  // 同步 overlay canvas 的實際像素尺寸
+  const rect = oc.getBoundingClientRect();
+  if(oc.width !== Math.round(rect.width) || oc.height !== Math.round(rect.height)){
+    oc.width  = Math.round(rect.width);
+    oc.height = Math.round(rect.height);
+  }
+  const ctx = oc.getContext('2d');
+  ctx.clearRect(0,0,oc.width,oc.height);
+  if(mouseX === null) return;
+
+  const area  = chart.chartArea;
+  // 只在圖表繪圖區內顯示
+  if(mouseX < area.left || mouseX > area.right || mouseY < area.top || mouseY > area.bottom) return;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(100,100,100,0.55)';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([5,4]);
+
+  // 縱線
+  ctx.beginPath(); ctx.moveTo(mouseX,area.top); ctx.lineTo(mouseX,area.bottom); ctx.stroke();
+  // 橫線
+  ctx.beginPath(); ctx.moveTo(area.left,mouseY); ctx.lineTo(area.right,mouseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font      = '10px sans-serif';
+  ctx.textAlign = 'center';
+
+  // X 軸標籤：找最近的資料點日期
+  const scale = chart.scales.x;
+  if(scale){
+    const idx   = Math.round(scale.getValueForPixel(mouseX));
+    const labels = chart.data.labels;
+    // labels 是數字 index，對應 t3_dates（從 closure 取不到，用 scale.ticks）
+    const ticks = scale.ticks;
+    // 找最近的 tick label
+    let nearLabel = '';
+    let minDist = Infinity;
+    ticks.forEach(t=>{
+      const px = scale.getPixelForValue(t.value);
+      const d  = Math.abs(px - mouseX);
+      if(d < minDist){ minDist=d; nearLabel=t.label||''; }
+    });
+    if(nearLabel){
+      const tx = Math.max(area.left+20, Math.min(area.right-20, mouseX));
+      ctx.fillStyle='rgba(50,50,50,0.8)';
+      ctx.fillRect(tx-22, area.bottom+2, 44, 14);
+      ctx.fillStyle='#fff';
+      ctx.fillText(nearLabel, tx, area.bottom+11);
+    }
+  }
+
+  // 左軸 Y 標籤
+  const yScale = chart.scales.y;
+  if(yScale){
+    const yVal = yScale.getValueForPixel(mouseY);
+    const label = typeof yVal==='number' ? t3FmtAxis(yVal) : '';
+    const ty = Math.max(area.top+8, Math.min(area.bottom-4, mouseY));
+    ctx.textAlign='right';
+    ctx.fillStyle='rgba(50,50,50,0.8)';
+    ctx.fillRect(area.left-40, ty-7, 38, 14);
+    ctx.fillStyle='#888';
+    ctx.fillText(label, area.left-4, ty+4);
+  }
+
+  // 右軸 Y 標籤
+  const yRScale = chart.scales.yRight;
+  if(yRScale && yRScale.display){
+    const yVal = yRScale.getValueForPixel(mouseY);
+    const label = typeof yVal==='number' ? t3FmtAxis(yVal) : '';
+    const ty = Math.max(area.top+8, Math.min(area.bottom-4, mouseY));
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(50,50,50,0.8)';
+    ctx.fillRect(area.right+2, ty-7, 38, 14);
+    ctx.fillStyle='#666';
+    ctx.fillText(label, area.right+4, ty+4);
+  }
+
+  ctx.restore();
+}
+
+// 綁定 t3 圖表的 mousemove（在 t3Redraw 後呼叫）
+function t3BindCrosshair(){
+  const canvas = document.getElementById('t3-chart');
+  if(!canvas || canvas._crosshairBound) return;
+  canvas._crosshairBound = true;
+  canvas.addEventListener('mousemove', e=>{
+    if(!state.t3_showCrosshair || !state.t3_chart) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+    t3DrawCrosshair(state.t3_chart, (e.clientX-rect.left)*scaleX, (e.clientY-rect.top)*scaleY);
+  });
+  canvas.addEventListener('mouseleave', ()=>{
+    const oc=document.getElementById('t3-crosshair');
+    if(oc){ const cx=oc.getContext('2d'); cx.clearRect(0,0,oc.width,oc.height); }
+  });
+  // （舊版 click handler 已移除，改由 _tipClickBound 版本處理）
+}
+
+// ── 軸範圍即時套用 ────────────────────────────────────
+function t3ApplyAxisRange(){
+  const g = id => document.getElementById(id)?.value || '';
+  state.t3AxisRange.yMin   = g('s-t3-ymin');
+  state.t3AxisRange.yMax   = g('s-t3-ymax');
+  state.t3AxisRange.yl2Min = g('s-t3-yl2min');
+  state.t3AxisRange.yl2Max = g('s-t3-yl2max');
+  state.t3AxisRange.yl3Min = g('s-t3-yl3min');
+  state.t3AxisRange.yl3Max = g('s-t3-yl3max');
+  state.t3AxisRange.y2Min  = g('s-t3-y2min');
+  state.t3AxisRange.y2Max  = g('s-t3-y2max');
+  if(state.t3_loaded) t3Redraw();
 }
 
 function t3SetStatus(msg,isErr){
@@ -4899,6 +5553,40 @@ function t5Redraw(){
 
   // 初始化年度拉桿
   t5InitYearSlider(allDates);
+  // 每次 Redraw 更新最新資料
+  state.t5_curDates    = allDates;
+  state.t5_curDatasets = datasets;
+  // 點擊顯示明細——每次 Redraw 重新綁定確保資料最新
+  (()=>{
+    const cvs = document.getElementById('t5-chart');
+    if(!cvs) return;
+    if(cvs._t5ClickHandler) cvs.removeEventListener('click', cvs._t5ClickHandler);
+    cvs._t5ClickHandler = e=>{
+      if(state.t5_showTip || !state.t5_chart) return;
+      const pts = state.t5_chart.getElementsAtEventForMode(e,'nearest',{intersect:false},true);
+      if(!pts.length) return;
+      const idx = pts[0].index;
+      state.t5_tipLocked = false;
+      const rect = cvs.getBoundingClientRect();
+      const fakeCtx = {
+        tooltip: {
+          opacity: 1,
+          dataPoints: state.t5_chart.data.datasets
+            .map((ds,i)=>({ datasetIndex:i, dataIndex:idx, raw:ds.data[idx],
+              parsed:{y:ds.data[idx]}, dataset:ds }))
+            .filter(dp=>dp.raw!==undefined),
+          caretX: e.clientX - rect.left,
+          caretY: e.clientY - rect.top,
+        },
+        chart: state.t5_chart
+      };
+      state.t5_showTip = true;
+      t5ShowTip(fakeCtx, state.t5_curDates, state.t5_curDatasets);
+      state.t5_showTip = false;
+      state.t5_tipLocked = true;
+    };
+    cvs.addEventListener('click', cvs._t5ClickHandler);
+  })();
 }
 
 function t5RenderCards(summaryData, dates){
@@ -4932,6 +5620,7 @@ const T5_MARKER_DEF = {
 function t5ShowTip(ctx, dates, datasets){
   const box=document.getElementById('t5-tip');
   if(ctx.tooltip.opacity===0){ if(!state.t5_tipLocked) box.style.display='none'; return; }
+  if(!state.t5_showTip && !state.t5_tipLocked){ box.style.display='none'; return; }
   if(state.t5_tipLocked) return;
 
   const dps   = ctx.tooltip.dataPoints;
@@ -4941,7 +5630,7 @@ function t5ShowTip(ctx, dates, datasets){
   const date  = dates[idx];
 
   // 判斷是否點到標記點
-  const hitMarker = dps.find(dp=>{ const d=datasets[dp.datasetIndex]; return d&&d.isMarker; });
+  const hitMarker = dps.find(dp=>{ const d=datasets[dp.datasetIndex]; return d&&d.isMarker&&dp.raw!==null&&dp.raw!==undefined; });
 
   let html = `<div style="font-weight:500;font-size:13px;color:#1a1a1a;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">${date}</div>`;
 
