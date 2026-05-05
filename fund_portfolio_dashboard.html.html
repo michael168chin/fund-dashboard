@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.58 (整合版)
+     版本：V2.59 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1139,10 +1139,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.58  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.59  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.58 (整合版)';
+const APP_VERSION = 'V2.59 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1533,25 +1533,6 @@ function updateAppTitle(){
 // ─── SCRAPING ─────────────────────────────────────────────
 async function fetchHTML(url){
   if(!url||!url.startsWith('http')) return null;
-
-  // ── 優先使用 GAS Proxy（無 CORS 限制，最穩定）──
-  if(state.gasUrl){
-    try{
-      const gasProxy = `${state.gasUrl}?type=fetch&url=${encodeURIComponent(url)}`;
-      const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),12000);
-      const r=await fetch(gasProxy,{signal:ctrl.signal,redirect:'follow'}); clearTimeout(tid);
-      if(r.ok){
-        const buf=await r.arrayBuffer();
-        const u8=new TextDecoder('utf-8').decode(buf);
-        const errs=(u8.match(/\uFFFD/g)||[]).length;
-        let html=u8;
-        if(errs>0){ try{ const b5=new TextDecoder('big5').decode(buf); html=(b5.match(/\uFFFD/g)||[]).length<errs?b5:u8; }catch(e){} }
-        if(html && html.length>500 && !html.startsWith('ERROR:')) return html;
-      }
-    }catch(e){}
-  }
-
-  // ── 備用：公開 CORS Proxy ──
   const legacy=/moneydj|funddj/i.test(url);
   const proxies=legacy
     ?[`https://corsproxy.io/?${encodeURIComponent(url)}`,`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`]
@@ -6164,7 +6145,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.58
+// Fund Portfolio Dashboard — 整合版 V2.59
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
