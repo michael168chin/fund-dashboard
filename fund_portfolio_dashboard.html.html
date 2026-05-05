@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.57 (整合版)
+     版本：V2.58 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1139,10 +1139,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.57  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.58  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.57 (整合版)';
+const APP_VERSION = 'V2.58 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1454,9 +1454,10 @@ async function loadData(){
       const custName=(rows[1][9]||'').trim();
       if(custName){ state.customerName=custName; state.showCustomerName=true; }
     }
-    if(rows[2]){
-      const n3=parseFloat((rows[2][13]||'').replace(/[$,]/g,''));
-      if(!isNaN(n3)) state.cumulativeDividend=n3;
+    if(rows[1]){
+      // 累積配息：L2 儲存格（第2列 index=1，L欄 index=11）
+      const l2=parseFloat((rows[1][11]||'').replace(/[$,]/g,''));
+      if(!isNaN(l2)) state.cumulativeDividend=l2;
     }
 
     const dataRows = rows.slice(4).filter(r=>r&&r[0]&&r[0].trim());
@@ -6163,7 +6164,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.57
+// Fund Portfolio Dashboard — 整合版 V2.58
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
