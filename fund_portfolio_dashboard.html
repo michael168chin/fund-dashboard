@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.59 (整合版)
+     版本：V2.60 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1139,10 +1139,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.59  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.60  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.59 (整合版)';
+const APP_VERSION = 'V2.60 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1550,7 +1550,12 @@ async function fetchHTML(url){
         if(errs===0) html=u8;
         else{ try{ const b5=new TextDecoder('big5').decode(buf); html=(b5.match(/\uFFFD/g)||[]).length<errs?b5:u8; }catch(e){html=u8;} }
       }
-      if(html&&html.length>500) return html;
+      if(html&&html.length>500){
+        // 移除/替換 charset meta，避免 DOMParser 用 Big5 重新解碼已轉換的字串
+        html = html.replace(/<meta[^>]+charset[^>]*>/gi,
+          '<meta charset="utf-8">');
+        return html;
+      }
     }catch(e){}
   }
   return null;
@@ -6145,7 +6150,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.59
+// Fund Portfolio Dashboard — 整合版 V2.60
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
