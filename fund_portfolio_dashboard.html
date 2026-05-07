@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.61 (整合版)
+     版本：V2.62 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1159,10 +1159,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.61  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.62  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.61 (整合版)';
+const APP_VERSION = 'V2.62 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1741,8 +1741,12 @@ function calcFunds(){
     const nextCashDet=nextDivDet*(1-rate);
     const origReinvDet=currFX>0?reinvDet/currFX:0;
     const estYield=nav>0?(div/nav)*12:0;
-    if(f.isVisible&&f.isVisiblePlan!==false&&f.isVisibleDetail!==false){
+    // Tab1 加總：只看 isVisiblePlan
+    if(f.isVisible&&f.isVisiblePlan!==false){
       totDivPlan+=estDivPlan; totReinvPlan+=reinvPlan; totCashPlan+=cashPlan; totNextDivPlan+=nextDivPlan;
+    }
+    // Tab2 加總：只看 isVisibleDetail
+    if(f.isVisible&&f.isVisibleDetail!==false){
       totCurrVal+=currVal; totOrigCost+=origCost;
       totEstDiv+=estDivDet; totCash+=cashDet; totReinv+=reinvDet; totNextDiv+=nextDivDet; totNextCash+=nextCashDet;
     }
@@ -1750,7 +1754,7 @@ function calcFunds(){
       origCost, currVal, tgtRet, polRet, estDivDet, origEstDivDet, cashDet, origCashAmtDet, reinvDet, reinvUnitsDet, nextDivDet, nextCashDet, origReinvDet, estYield };
   });
 
-  const visInv=out.reduce((s,f)=>(f.isVisible&&f.isVisiblePlan!==false&&f.isVisibleDetail!==false)?s+f.initInv:s,0);
+  const visInv=out.reduce((s,f)=>(f.isVisible&&f.isVisiblePlan!==false)?s+f.initInv:s,0);
   const avgCashYield=visInv>0?(totCashPlan*12)/visInv:0;
   const avgGrossYield=visInv>0?(totDivPlan*12)/visInv:0;
   const estWtYield=totCurrVal>0?(totEstDiv*12)/totCurrVal:0;
@@ -6175,7 +6179,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.61
+// Fund Portfolio Dashboard — 整合版 V2.62
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
