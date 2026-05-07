@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.60 (整合版)
+     版本：V2.61 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -516,6 +516,11 @@
                 <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                   <span style="width:10px;height:10px;border-radius:2px;background:#185FA5;display:inline-block;flex-shrink:0;"></span>
                   <span class="text-xs font-medium text-slate-600">A 組</span>
+                  <input type="text" id="t4-group-name-0" placeholder="組合名稱（選填）"
+                    value=""
+                    oninput="t4_groupCustomNames[0]=this.value; t4Redraw();"
+                    style="font-size:11px;padding:1px 5px;border:1px solid #e2e8f0;border-radius:4px;width:90px;color:#185FA5;font-weight:500;"
+                    onclick="event.stopPropagation();">
                   <button onclick="t4GroupSelectAll(0,true)" class="ms-act-btn ms-act-all" style="font-size:10px;padding:1px 6px;">全選</button>
                   <button onclick="t4GroupSelectAll(0,false)" class="ms-act-btn ms-act-none" style="font-size:10px;padding:1px 6px;">全不選</button>
                   <button id="t4-pause-g0" onclick="t4GroupTogglePause(0)" title="暫時取消/恢復此組"
@@ -562,6 +567,11 @@
                 <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                   <span style="width:10px;height:10px;border-radius:2px;background:#D85A30;display:inline-block;flex-shrink:0;"></span>
                   <span class="text-xs font-medium text-slate-600">B 組</span>
+                  <input type="text" id="t4-group-name-1" placeholder="組合名稱（選填）"
+                    value=""
+                    oninput="t4_groupCustomNames[1]=this.value; t4Redraw();"
+                    style="font-size:11px;padding:1px 5px;border:1px solid #e2e8f0;border-radius:4px;width:90px;color:#1D9E75;font-weight:500;"
+                    onclick="event.stopPropagation();">
                   <button onclick="t4GroupSelectAll(1,true)" class="ms-act-btn ms-act-all" style="font-size:10px;padding:1px 6px;">全選</button>
                   <button onclick="t4GroupSelectAll(1,false)" class="ms-act-btn ms-act-none" style="font-size:10px;padding:1px 6px;">全不選</button>
                   <button id="t4-pause-g1" onclick="t4GroupTogglePause(1)" title="暫時取消/恢復此組"
@@ -608,6 +618,11 @@
                 <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                   <span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block;flex-shrink:0;"></span>
                   <span class="text-xs font-medium text-slate-600">C 組</span>
+                  <input type="text" id="t4-group-name-2" placeholder="組合名稱（選填）"
+                    value=""
+                    oninput="t4_groupCustomNames[2]=this.value; t4Redraw();"
+                    style="font-size:11px;padding:1px 5px;border:1px solid #e2e8f0;border-radius:4px;width:90px;color:#D85A30;font-weight:500;"
+                    onclick="event.stopPropagation();">
                   <button onclick="t4GroupSelectAll(2,true)" class="ms-act-btn ms-act-all" style="font-size:10px;padding:1px 6px;">全選</button>
                   <button onclick="t4GroupSelectAll(2,false)" class="ms-act-btn ms-act-none" style="font-size:10px;padding:1px 6px;">全不選</button>
                   <button id="t4-pause-g2" onclick="t4GroupTogglePause(2)" title="暫時取消/恢復此組"
@@ -654,6 +669,11 @@
                 <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                   <span style="width:10px;height:10px;border-radius:2px;background:#9B59B6;display:inline-block;flex-shrink:0;"></span>
                   <span class="text-xs font-medium text-slate-600">D 組</span>
+                  <input type="text" id="t4-group-name-3" placeholder="組合名稱（選填）"
+                    value=""
+                    oninput="t4_groupCustomNames[3]=this.value; t4Redraw();"
+                    style="font-size:11px;padding:1px 5px;border:1px solid #e2e8f0;border-radius:4px;width:90px;color:#9B59B6;font-weight:500;"
+                    onclick="event.stopPropagation();">
                   <button onclick="t4GroupSelectAll(3,true)" class="ms-act-btn ms-act-all" style="font-size:10px;padding:1px 6px;">全選</button>
                   <button onclick="t4GroupSelectAll(3,false)" class="ms-act-btn ms-act-none" style="font-size:10px;padding:1px 6px;">全不選</button>
                   <button id="t4-pause-g3" onclick="t4GroupTogglePause(3)" title="暫時取消/恢復此組"
@@ -1139,10 +1159,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.60  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.61  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.60 (整合版)';
+const APP_VERSION = 'V2.61 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1488,7 +1508,7 @@ async function loadData(){
         dividend:null, dividendDate:null, hasDividends:null,
         units:isNaN(units)?null:units, avgPrice:isNaN(avgPrice)?null:avgPrice,
         avgFX:isNaN(avgFX)?null:avgFX, currFX:isNaN(currFX)?null:currFX,
-        allocation:alloc, reinvestRate:globalRate, isVisible:true,
+        allocation:alloc, reinvestRate:globalRate, isVisible:true, isVisiblePlan:true, isVisibleDetail:true,
         fetchAttempted:isManual, isManualNavValid:isManual,
         manualNav, manualDate:manualDateStr, manualNavChange:isManual&&hasChg?manualChg:null
       };
@@ -1721,7 +1741,7 @@ function calcFunds(){
     const nextCashDet=nextDivDet*(1-rate);
     const origReinvDet=currFX>0?reinvDet/currFX:0;
     const estYield=nav>0?(div/nav)*12:0;
-    if(f.isVisible){
+    if(f.isVisible&&f.isVisiblePlan!==false&&f.isVisibleDetail!==false){
       totDivPlan+=estDivPlan; totReinvPlan+=reinvPlan; totCashPlan+=cashPlan; totNextDivPlan+=nextDivPlan;
       totCurrVal+=currVal; totOrigCost+=origCost;
       totEstDiv+=estDivDet; totCash+=cashDet; totReinv+=reinvDet; totNextDiv+=nextDivDet; totNextCash+=nextCashDet;
@@ -1730,12 +1750,12 @@ function calcFunds(){
       origCost, currVal, tgtRet, polRet, estDivDet, origEstDivDet, cashDet, origCashAmtDet, reinvDet, reinvUnitsDet, nextDivDet, nextCashDet, origReinvDet, estYield };
   });
 
-  const visInv=out.reduce((s,f)=>f.isVisible?s+f.initInv:s,0);
+  const visInv=out.reduce((s,f)=>(f.isVisible&&f.isVisiblePlan!==false&&f.isVisibleDetail!==false)?s+f.initInv:s,0);
   const avgCashYield=visInv>0?(totCashPlan*12)/visInv:0;
   const avgGrossYield=visInv>0?(totDivPlan*12)/visInv:0;
   const estWtYield=totCurrVal>0?(totEstDiv*12)/totCurrVal:0;
-  const totAlloc=out.filter(f=>f.isVisible).reduce((s,f)=>s+(f.allocation||0),0);
-  const totInitInv=out.filter(f=>f.isVisible).reduce((s,f)=>s+f.initInv,0);
+  const totAlloc=out.filter(f=>f.isVisible&&f.isVisiblePlan!==false).reduce((s,f)=>s+(f.allocation||0),0);
+  const totInitInv=out.filter(f=>f.isVisible&&f.isVisiblePlan!==false).reduce((s,f)=>s+f.initInv,0);
 
   const sorted=[...out.filter(f=>f.hasDividends!==false),...out.filter(f=>f.hasDividends===false)];
 
@@ -1783,7 +1803,7 @@ function sortRows(rows, sort){
 function renderPlanTab(data){
   renderCards('plan', data.planSummary);
   const cols = [PLAN_COLS[0], ...state.colOrderPlan.map(k=>PLAN_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisPlan[c.key]!==false);
-  const rows = sortRows(data.funds.filter(f=>f.isVisible), state.sortPlan);
+  const rows = sortRows(data.funds.filter(f=>f.isVisible&&f.isVisiblePlan!==false), state.sortPlan);
   const tbl = document.getElementById('table-plan');
   tbl.innerHTML = renderTableHTML(cols, rows, data.planSummary, 'plan');
   attachResizeHandlers(tbl,'plan');
@@ -1792,7 +1812,7 @@ function renderPlanTab(data){
 function renderDetailsTab(data){
   renderCards('details', data.detailsSummary);
   const cols = [DETAILS_COLS[0], ...state.colOrderDetails.map(k=>DETAILS_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisDetails[c.key]!==false);
-  const rows = sortRows(data.funds.filter(f=>f.isVisible), state.sortDetails);
+  const rows = sortRows(data.funds.filter(f=>f.isVisible&&f.isVisibleDetail!==false), state.sortDetails);
   const tbl = document.getElementById('table-details');
   tbl.innerHTML = renderTableHTML(cols, rows, data.detailsSummary, 'details');
   attachResizeHandlers(tbl,'details');
@@ -2032,13 +2052,13 @@ document.getElementById('btn-toggle-unalloc').addEventListener('click',()=>{
   const unalloc = state.funds.filter(isUnalloc);
   if(!unalloc.length) return;
 
-  // 目前是否全部隱藏 → 要切換成「全部顯示」；否則「全部隱藏」
-  const allHidden = unalloc.every(f => f.isVisible === false);
-  const nextVisible = allHidden; // true = 顯示, false = 隱藏
+  // Tab1/Tab2 各自獨立的可見性欄位
+  const visKey = t === 'plan' ? 'isVisiblePlan' : 'isVisibleDetail';
+  const allHidden = unalloc.every(f => f[visKey] === false);
+  const nextVisible = allHidden;
 
-  // 直接修改 state.funds 陣列中每個物件
   state.funds.forEach(f => {
-    if(isUnalloc(f)) f.isVisible = nextVisible;
+    if(isUnalloc(f)) f[visKey] = nextVisible;
   });
 
   updateToggleBtn();
@@ -2055,8 +2075,9 @@ function updateToggleBtn(){
     ? (Number(f.allocation) === 0 || f.allocation === null || f.allocation === undefined || isNaN(Number(f.allocation)))
     : (Number(f.units) === 0 || f.units === null || f.units === undefined || isNaN(Number(f.units)));
 
+  const visKey2   = t === 'plan' ? 'isVisiblePlan' : 'isVisibleDetail';
   const unalloc   = state.funds.filter(isUnalloc);
-  const allHidden = unalloc.length > 0 && unalloc.every(f => f.isVisible === false);
+  const allHidden = unalloc.length > 0 && unalloc.every(f => f[visKey2] === false);
 
   if(allHidden){
     btn.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg><span class="hidden lg:inline">顯示未配置 (${unalloc.length})</span>`;
@@ -2077,7 +2098,7 @@ function copyTable(tab){
   const isP=tab==='plan';
   const cols=isP?[PLAN_COLS[0],...state.colOrderPlan.map(k=>PLAN_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisPlan[c.key]!==false)
               :[DETAILS_COLS[0],...state.colOrderDetails.map(k=>DETAILS_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisDetails[c.key]!==false);
-  const rows=data.funds.filter(f=>f.isVisible);
+  const rows=data.funds.filter(f=>f.isVisible&&(isP?f.isVisiblePlan!==false:f.isVisibleDetail!==false));
   const summary=isP?data.planSummary:data.detailsSummary;
   const getCsv=(f,key)=>{
     if(key==='name') return f.name||'';
@@ -2102,7 +2123,7 @@ document.getElementById('btn-export-csv').addEventListener('click',()=>{
   const data=calcFunds(); const isP=tab==='plan';
   const cols=isP?[PLAN_COLS[0],...state.colOrderPlan.map(k=>PLAN_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisPlan[c.key]!==false)
               :[DETAILS_COLS[0],...state.colOrderDetails.map(k=>DETAILS_COLS.find(c=>c.key===k)).filter(Boolean)].filter(c=>state.colVisDetails[c.key]!==false);
-  const rows=data.funds.filter(f=>f.isVisible);
+  const rows=data.funds.filter(f=>f.isVisible&&(isP?f.isVisiblePlan!==false:f.isVisibleDetail!==false));
   const hdr=cols.map(c=>`"${c.label}"`).join(',');
   const body=rows.map(f=>cols.map(c=>`"${c.key==='name'?f.name:fmtCsv(isP?({initInv:f.initInv,nav:f.nav})[c.key]:({currVal:f.currVal})[c.key])||''}"`).join(',')).join('\n');
   const csv='\uFEFF'+hdr+'\n'+body;
@@ -2181,7 +2202,10 @@ function closeSettings(){
 
 function toggleFundVis(id){
   const f=state.funds.find(f=>f.id===id); if(!f) return;
-  f.isVisible=!f.isVisible;
+  const tv = state.activeTab;
+  if(tv==='plan')       f.isVisiblePlan   = !( f.isVisiblePlan   !== false);
+  else if(tv==='details') f.isVisibleDetail = !( f.isVisibleDetail !== false);
+  else f.isVisible = !f.isVisible;
   const btn=document.getElementById(`fvis-${id}`);
   btn.textContent=f.isVisible?'👁 顯示':'隱藏';
   btn.className=`text-xs px-2 py-1 rounded ${f.isVisible?'bg-blue-100 text-blue-700':'bg-slate-200 text-slate-400'}`;
@@ -2270,6 +2294,7 @@ async function t3FetchSheet(type){
 // ── Tab4 三組多選狀態 ──────────────────────────────────────
 const T4_GROUP_COLORS = ['#185FA5','#D85A30','#1D9E75','#9B59B6'];
 const T4_GROUP_NAMES  = ['A','B','C','D'];
+const t4_groupCustomNames = ['','','',''];  // 使用者自訂組合名稱
 const T4_GROUP_COUNT  = 4;
 // 每組：{ all[], selected:Set, weights:{fund:pct}, paused:bool, pausedSnapshot:Set|null }
 const t4Groups = Array.from({length:T4_GROUP_COUNT}, ()=>({
@@ -2922,7 +2947,7 @@ function t4Redraw(){
       const ptStyle   = POINT_STYLES[(gi * 3 + fi) % POINT_STYLES.length];
       const ptInterval = Math.max(1, Math.floor(allDates.length / 20)); // 約每20個點顯示一個端點
 
-      const fundLabel = `${T4_GROUP_NAMES[gi]}：${t3FundLabel(fund,'t4')}${useFX&&isUSD?' (含匯率)':''}`;
+      const fundLabel = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]}：${t3FundLabel(fund,'t4')}${useFX&&isUSD?' (含匯率)':''}`;
       datasets.push({
         label: fundLabel,
         data, spanGaps: true,
@@ -2961,7 +2986,7 @@ function t4Redraw(){
           : parseFloat(((v/base)*100).toFixed(4));
       });
       const emaSeries = calcEMA(idxSeries, period);
-      const emaLabel  = `${T4_GROUP_NAMES[gi]}：EMA${period}(${t3FundLabel(fund,'t4')})`;
+      const emaLabel  = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]}：EMA${period}(${t3FundLabel(fund,'t4')})`;
       datasets.push({
         label: emaLabel, data: emaSeries, spanGaps: true,
         borderColor: T4_GROUP_COLORS[gi],
@@ -2979,7 +3004,7 @@ function t4Redraw(){
     if((sel.length > 1 || totW > 0) && state.t4_yMode !== 'price'){
       const groupData = t4CalcGroupSeries(gi, allDates);
       if(groupData){
-        const groupLabel = `${T4_GROUP_NAMES[gi]} 組合`;
+        const groupLabel = t4_groupCustomNames[gi] ? t4_groupCustomNames[gi] : `${T4_GROUP_NAMES[gi]} 組合`;
         datasets.push({
           label: groupLabel,
           data: groupData, spanGaps: true,
@@ -3003,7 +3028,7 @@ function t4Redraw(){
         if(grpEmaConf.show){
           const grpEmaPeriod = grpEmaConf.period || 55;
           const grpEmaSeries = calcEMA(groupData, grpEmaPeriod);
-          const grpEmaLabel  = `${T4_GROUP_NAMES[gi]} EMA${grpEmaPeriod}(組合)`;
+          const grpEmaLabel  = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]} EMA${grpEmaPeriod}(組合)`;
           datasets.push({
             label: grpEmaLabel, data: grpEmaSeries, spanGaps: true,
             borderColor: T4_GROUP_COLORS[gi],
@@ -3110,7 +3135,7 @@ function t4ShowTip(ctx, dates, datasets){
     const grpDs = datasets.filter(d=>d.groupIdx===gi);
     if(!grpDs.length) return;
     html += `<div style="font-size:11px;font-weight:600;color:${T4_GROUP_COLORS[gi]};margin:5px 0 3px;">${T4_GROUP_NAMES[gi]} 組</div>`;
-    textLines.push(`▸ ${T4_GROUP_NAMES[gi]} 組`);
+    textLines.push(`▸ ${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]} 組`);
     grpDs.forEach(ds=>{
       if(ds.isEma) return;  // EMA 線不顯示在 tooltip
       const val = ds.data[idx];
@@ -6150,7 +6175,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.60
+// Fund Portfolio Dashboard — 整合版 V2.61
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
