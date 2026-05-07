@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.62 (整合版)
+     版本：V2.63 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -446,6 +446,13 @@
             <canvas id="t3-chart"></canvas>
             <canvas id="t3-crosshair" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;"></canvas>
             <div id="tip"></div>
+            <!-- 左軸上下微調按鈕 -->
+            <div id="t3-yaxis-btns" style="display:none;position:absolute;left:2px;bottom:28px;z-index:10;flex-direction:column;gap:2px;">
+              <button onclick="t3ShiftYAxis(1)" title="左軸往上移一個刻度間距"
+                style="width:22px;height:22px;border-radius:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">▲</button>
+              <button onclick="t3ShiftYAxis(-1)" title="左軸往下移一個刻度間距"
+                style="width:22px;height:22px;border-radius:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">▼</button>
+            </div>
           </div>
           <!-- 時間範圍雙端拉桿 -->
           <div id="t3-slider-wrap" style="padding:20px 4px 20px;display:none;">
@@ -1159,10 +1166,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.62  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.63  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.62 (整合版)';
+const APP_VERSION = 'V2.63 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1290,6 +1297,8 @@ let state = {
   t4_showTip: true,         // Tab4 滑鼠移動明細（預設顯示）
   t5_showTip: true,         // Tab5 滑鼠移動明細（預設顯示）
   t3_lineWidth: 1.5,        // Tab3 組合線粗細（預設1.5）
+  t3_yTickStep: 0,          // Tab3 左軸刻度間距（由圖表自動計算）
+  t3_yMinShift: 0,          // Tab3 左軸最小值偏移量（tickStep 的倍數）
   t3_pointSize: 1,          // Tab3 折線圖示大小（預設1）
   t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
   t3_showCrosshair: false,  // 十字虛線（預設隱藏）
@@ -3676,6 +3685,30 @@ function t3DrawCoin(ctx, cx, baseY, coinW, coinH){
 }
 
 // ── Tab3 線寬調整 ────────────────────────────────────
+// ── Tab3 左軸上下移動 ────────────────────────────────
+function t3ShiftYAxis(dir){
+  // dir: +1=往上（min 增加），-1=往下（min 減少）
+  if(!state.t3_chart || !state.t3_yTickStep) return;
+  const step = state.t3_yTickStep;
+  state.t3_yMinShift += dir;
+
+  const yScale = state.t3_chart.scales.y;
+  if(!yScale) return;
+
+  // 取目前的 min（若已設定則用設定值，否則用圖表自動值）
+  const currentMin = yScale.min;
+  const newMin = currentMin + dir * step;
+
+  // 更新 state 和 齒輪輸入框
+  state.t3AxisRange.yMin = String(Math.round(newMin));
+  const el = document.getElementById('s-t3-ymin');
+  if(el) el.value = state.t3AxisRange.yMin;
+
+  // 直接更新圖表（不重建，只更新 min）
+  state.t3_chart.options.scales.y.min = newMin;
+  state.t3_chart.update('none');
+}
+
 function t3AdjLineWidth(delta){
   state.t3_lineWidth = Math.max(0.5, Math.min(8, parseFloat(((state.t3_lineWidth||2)+delta).toFixed(1))));
   const lbl = document.getElementById('t3-line-width-label');
@@ -4014,6 +4047,23 @@ function t3Redraw(){
   // 每次 Redraw 都更新最新資料（供 click handler 取用）
   state.t3_curDates  = dates;
   state.t3_curSeries = seriesList;
+
+  // 計算左軸 tickStep 並顯示 ▲▼ 按鈕
+  setTimeout(()=>{
+    const chart = state.t3_chart;
+    if(!chart) return;
+    const yScale = chart.scales.y;
+    if(!yScale) return;
+    const ticks = yScale.ticks;
+    if(ticks && ticks.length >= 2){
+      // 計算相鄰刻度間距
+      const step = Math.abs(ticks[1].value - ticks[0].value);
+      state.t3_yTickStep = step;
+    }
+    // 顯示按鈕
+    const btnDiv = document.getElementById('t3-yaxis-btns');
+    if(btnDiv) btnDiv.style.display = 'flex';
+  }, 100);
   // 點擊顯示明細（移動明細隱藏模式用）—— 每次 Redraw 重新綁定
   (()=>{
     const cvs = document.getElementById('t3-chart');
@@ -6179,7 +6229,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.62
+// Fund Portfolio Dashboard — 整合版 V2.63
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
