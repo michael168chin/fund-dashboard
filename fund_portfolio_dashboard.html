@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.63 (整合版)
+     版本：V2.64 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -452,6 +452,8 @@
                 style="width:22px;height:22px;border-radius:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">▲</button>
               <button onclick="t3ShiftYAxis(-1)" title="左軸往下移一個刻度間距"
                 style="width:22px;height:22px;border-radius:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">▼</button>
+              <button onclick="t3ResetYAxis()" title="重置左軸為自動刻度"
+                style="width:22px;height:22px;border-radius:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#64748b;font-size:9px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">↺</button>
             </div>
           </div>
           <!-- 時間範圍雙端拉桿 -->
@@ -1166,10 +1168,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.63  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.64  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.63 (整合版)';
+const APP_VERSION = 'V2.64 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3686,6 +3688,18 @@ function t3DrawCoin(ctx, cx, baseY, coinW, coinH){
 
 // ── Tab3 線寬調整 ────────────────────────────────────
 // ── Tab3 左軸上下移動 ────────────────────────────────
+function t3ResetYAxis(){
+  // 清除自訂 yMin，恢復自動刻度
+  state.t3AxisRange.yMin = '';
+  state.t3_yMinShift = 0;
+  const el = document.getElementById('s-t3-ymin');
+  if(el) el.value = '';
+  if(state.t3_chart){
+    state.t3_chart.options.scales.y.min = undefined;
+    state.t3_chart.update('none');
+  }
+}
+
 function t3ShiftYAxis(dir){
   // dir: +1=往上（min 增加），-1=往下（min 減少）
   if(!state.t3_chart || !state.t3_yTickStep) return;
@@ -6229,7 +6243,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.63
+// Fund Portfolio Dashboard — 整合版 V2.64
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
