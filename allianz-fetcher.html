@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.6.4
+     系統版本：v1.6.5
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.4</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.5</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.6.4';
+    const APP_VERSION = 'v1.6.5';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -366,6 +366,12 @@
       const handleWriteToSheet = async () => {
         if (activeTab.includes('div')) { alert('配息僅供預覽。'); return; }
         if (!finalProcessedRates.length) return;
+        if (activeTab === 'custom-target' && !customTargetCode.trim()) {
+          alert('請先輸入標的代碼再進行寫入。'); return;
+        }
+        if (activeTab === 'custom-target' && isCodeMismatch && !isCodeConfirmed) {
+          alert('代碼比對不符，請先勾選確認方塊後再寫入。'); return;
+        }
         setIsWriting(true);
         try {
           const targetHeader = activeTab === 'fund-manual'   ? 'NTDMD0020' :
@@ -557,8 +563,37 @@
                             <input type="date" value={endDate}   onChange={(e)=>setEndDate(e.target.value)}   className="p-2 border rounded-xl text-sm flex-1 outline-none" />
                           </div>
                         )}
+                        {/* custom-target：代碼不符時顯示確認方塊 */}
+                        {activeTab === 'custom-target' && isCodeMismatch && (
+                          <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl animate-fadeIn">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                              <input type="checkbox" className="mt-1 w-4 h-4 accent-orange-500" checked={isCodeConfirmed} onChange={(e) => setIsCodeConfirmed(e.target.checked)} />
+                              <span className="text-xs font-bold text-orange-800 leading-tight">
+                                代碼比對不符：手輸「{customTargetCode.trim().toUpperCase()}」與網頁偵測「{detectedTargetCode}」不一致，我已確認要以此代碼寫入試算表。
+                              </span>
+                            </label>
+                          </div>
+                        )}
+                        {/* custom-target：未輸入代碼警示 */}
+                        {activeTab === 'custom-target' && !customTargetCode.trim() && (
+                          <p className="text-xs font-bold text-red-500 animate-fadeIn">⚠️ 請先在上方輸入標的代碼。</p>
+                        )}
                       </div>
-                      <button onClick={handleWriteToSheet} disabled={isWriting || activeTab.includes('div')} className={`px-12 py-4 text-white font-black rounded-xl shadow-xl transition-all active:scale-95 ${isWriting || activeTab.includes('div') ? 'bg-gray-300' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                      <button
+                        onClick={handleWriteToSheet}
+                        disabled={
+                          isWriting ||
+                          activeTab.includes('div') ||
+                          (activeTab === 'custom-target' && !customTargetCode.trim()) ||
+                          (activeTab === 'custom-target' && isCodeMismatch && !isCodeConfirmed)
+                        }
+                        className={`px-12 py-4 text-white font-black rounded-xl shadow-xl transition-all active:scale-95 ${
+                          isWriting || activeTab.includes('div') ||
+                          (activeTab === 'custom-target' && !customTargetCode.trim()) ||
+                          (activeTab === 'custom-target' && isCodeMismatch && !isCodeConfirmed)
+                            ? 'bg-gray-300 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}>
                         {isWriting ? '寫入中...' : activeTab.includes('div') ? '配息僅供預覽' : '批次寫入試算表'}
                       </button>
                     </div>
