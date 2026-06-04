@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.67 (整合版)
+     版本：V2.68 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1169,10 +1169,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.67  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.68  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.67 (整合版)';
+const APP_VERSION = 'V2.68 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -2756,7 +2756,7 @@ function t4CalcDivAdjustedSeries(fund, allDates, gi){
     const row = state.t3_pRows.find(r=>r.date===date);
     if(!row || row[fund]===undefined) return null;
     let val = row[fund];
-    if(useFX) val *= t3FxMult(fund, date, state.t3_ccy);
+    if(useFX) val *= t3FxMult(fund, date, 'NTD');
     return val;
   });
 
@@ -2969,7 +2969,7 @@ function t4Redraw(){
       const ptStyle   = POINT_STYLES[(gi * 3 + fi) % POINT_STYLES.length];
       const ptInterval = Math.max(1, Math.floor(allDates.length / 20)); // 約每20個點顯示一個端點
 
-      const fundLabel = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]}：${t3FundLabel(fund,'t4')}${useFX&&isUSD?' (含匯率)':''}`;
+      const fundLabel = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]}：${t3FundLabel(fund,'t4')}${useFX&&(isUSD||t3IsJPY(fund))?' (含匯率)':''}`;
       datasets.push({
         label: fundLabel,
         data, spanGaps: true,
@@ -6290,7 +6290,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.67
+// Fund Portfolio Dashboard — 整合版 V2.68
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
