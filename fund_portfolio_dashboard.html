@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.64 (整合版)
+     版本：V2.65 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -435,8 +435,9 @@
               </div>
             </div>
             <div class="flex gap-2 ml-auto items-center flex-wrap">
-              <button id="t3-btn-ntd" class="btn btn-primary text-xs">新台幣</button>
-              <button id="t3-btn-usd" class="btn text-xs">美元</button>
+              <button id="t3-btn-ntd" onclick="t3SetCcy('NTD')" class="btn btn-primary text-xs">新台幣</button>
+              <button id="t3-btn-usd" onclick="t3SetCcy('USD')" class="btn text-xs">美元</button>
+              <button id="t3-btn-jpy" onclick="t3SetCcy('JPY')" class="btn text-xs">日圓</button>
             </div>
           </div>
           <!-- Summary cards -->
@@ -1168,10 +1169,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.64  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.65  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.64 (整合版)';
+const APP_VERSION = 'V2.65 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1276,7 +1277,7 @@ let state = {
   isRecordingNav: false,
   hasStartedScraping: false,
   // Tab3 state
-  t3_pRows: [], t3_txRows: [], t3_fxMap: {},
+  t3_pRows: [], t3_txRows: [], t3_fxMap: {}, t3_jpyMap: {},
   t3_ccy: 'NTD', t3_chart: null, t3_tipLocked: false,
   t3_loaded: false,
   t3_dateLocked: false,
@@ -1726,7 +1727,12 @@ function calcFunds(){
     const units=typeof f.units==='number'&&!isNaN(f.units)?f.units:0;
     const avgPr=typeof f.avgPrice==='number'&&!isNaN(f.avgPrice)?f.avgPrice:0;
     const avgFX=(typeof f.avgFX==='number'&&!isNaN(f.avgFX)&&f.avgFX>0)?f.avgFX:1;
-    const currFX=(typeof f.currFX==='number'&&!isNaN(f.currFX)&&f.currFX>0)?f.currFX:1;
+    const isJPYfund = f.code && f.code.toUpperCase().startsWith('JPY');
+    const isUSDfund = f.code && f.code.toUpperCase().startsWith('USD');
+    // JPY 標的的 currFX 使用日圓匯率
+    const _rawFX=(typeof f.currFX==='number'&&!isNaN(f.currFX)&&f.currFX>0)?f.currFX:1;
+    const currFX = isJPYfund ? (()=>{ const jfx=t3GetJPYFX(Object.keys(state.t3_jpyMap).sort().pop()||''); return jfx||0.22; })() : _rawFX;
+    const currencyLabel = isJPYfund ? '日圓' : (isUSDfund ? '美元' : '新台幣');
     const rate=(f.reinvestRate||0)/100;
     const annYield=nav>0?(div/nav)*12:0;
     const initInv=state.totalInvestment*((f.allocation||0)/100);
@@ -1762,7 +1768,8 @@ function calcFunds(){
       totEstDiv+=estDivDet; totCash+=cashDet; totReinv+=reinvDet; totNextDiv+=nextDivDet; totNextCash+=nextCashDet;
     }
     return {...f, initInv, annYield, estDivPlan, origDivAmtPlan, reinvPlan, cashPlan, origCashAmtPlan, reinvUnitsPlan, nextDivPlan, origReinvPlan,
-      origCost, currVal, tgtRet, polRet, estDivDet, origEstDivDet, cashDet, origCashAmtDet, reinvDet, reinvUnitsDet, nextDivDet, nextCashDet, origReinvDet, estYield };
+      origCost, currVal, tgtRet, polRet, estDivDet, origEstDivDet, cashDet, origCashAmtDet, reinvDet, reinvUnitsDet, nextDivDet, nextCashDet, origReinvDet, estYield,
+      currencyLabel };
   });
 
   const visInv=out.reduce((s,f)=>(f.isVisible&&f.isVisiblePlan!==false)?s+f.initInv:s,0);
@@ -1875,16 +1882,16 @@ function cellHTML(f, key, tab){
     case 'navChg':    return `<span class="font-mono ${f.navChg>0?'text-red-500':f.navChg<0?'text-green-500':'text-slate-500'}">${typeof f.navChg==='number'?`${f.navChg>0?'+':''}${fmtN(f.navChg)}`:'-'}</span>`;
     case 'navChgPct': return `<span class="font-mono ${f.navChgPct>0?'text-red-500':f.navChgPct<0?'text-green-500':'text-slate-500'}">${typeof f.navChgPct==='number'?`${f.navChgPct>0?'+':''}${fmtN(f.navChgPct)}%`:'-'}</span>`;
     case 'dividend':  return divCell(f);
-    case 'origDivAmt': return `<span class="font-mono text-blue-600">${f.currency} ${fmtN(f.origDivAmtPlan)}</span>`;
+    case 'origDivAmt': return `<span class="font-mono text-blue-600">${f.currencyLabel||f.currency} ${fmtN(f.origDivAmtPlan)}</span>`;
     case 'divAmt':    return `<span class="font-mono text-slate-600">NT$${fmtM(f.estDivPlan)}</span>`;
     case 'yield':     return `<span class="font-bold text-blue-700">${fmtP(f.annYield)}</span>`;
     case 'alloc':     return `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs">${fmtN(f.allocation,0,2)}%</span>`;
     case 'reinvRate': return `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs">${fmtN(f.reinvestRate,0,2)}%</span>`;
-    case 'origReinv': return `<span class="font-mono text-orange-600">${f.currency} ${fmtN(f.origReinvPlan)}</span>`;
+    case 'origReinv': return `<span class="font-mono text-orange-600">${f.currencyLabel||f.currency} ${fmtN(f.origReinvPlan)}</span>`;
     case 'reinvAmt':  return `<span class="font-mono text-orange-700">$${fmtM(f.reinvPlan)}</span>`;
     case 'reinvUnits':return `<span class="font-mono text-orange-700">${fmtN(f.reinvUnitsPlan,4,4)}</span>`;
     case 'nextDiv':   return `<span class="font-mono text-indigo-700">${fmtN(f.nextDivPlan,4,4)}</span>`;
-    case 'origCashAmt': return `<span class="font-mono text-emerald-600">${f.currency} ${fmtN(f.origCashAmtPlan)}</span>`;
+    case 'origCashAmt': return `<span class="font-mono text-emerald-600">${f.currencyLabel||f.currency} ${fmtN(f.origCashAmtPlan)}</span>`;
     case 'cashAmt':   return `<span class="font-mono font-bold text-emerald-700">NT$${fmtM(f.cashPlan)}</span>`;
   }
   else switch(key){
@@ -1898,13 +1905,13 @@ function cellHTML(f, key, tab){
     case 'targetRet': return `<span class="font-mono ${f.tgtRet>0?'text-red-500':f.tgtRet<0?'text-green-500':'text-slate-600'}">${f.tgtRet>0?'+':''}${fmtN(f.tgtRet*100)}%</span>`;
     case 'policyRet': return `<span class="font-mono font-bold ${f.polRet>0?'text-red-600':f.polRet<0?'text-green-600':'text-slate-600'}">${f.polRet>0?'+':''}${fmtN(f.polRet*100)}%</span>`;
     case 'dividend':  return divCell(f);
-    case 'origEstDiv':  return `<span class="font-mono text-blue-600">${f.currency} ${fmtN(f.origEstDivDet)}</span>`;
+    case 'origEstDiv':  return `<span class="font-mono text-blue-600">${f.currencyLabel||f.currency} ${fmtN(f.origEstDivDet)}</span>`;
     case 'estDiv':    return `<span class="font-mono text-slate-600">NT$${fmtM(f.estDivDet)}</span>`;
     case 'estYield':  return `<span class="font-bold text-blue-700">${fmtN(f.estYield*100,2,2)}%</span>`;
     case 'reinvRate': return `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs">${fmtN(f.reinvestRate,0,2)}%</span>`;
-    case 'origCashAmtDet': return `<span class="font-mono text-emerald-600">${f.currency} ${fmtN(f.origCashAmtDet)}</span>`;
+    case 'origCashAmtDet': return `<span class="font-mono text-emerald-600">${f.currencyLabel||f.currency} ${fmtN(f.origCashAmtDet)}</span>`;
     case 'cashAmt':   return `<span class="font-mono font-bold text-emerald-700">NT$${fmtM(f.cashDet)}</span>`;
-    case 'origReinv': return `<span class="font-mono text-orange-600">${f.currency} ${fmtN(f.origReinvDet)}</span>`;
+    case 'origReinv': return `<span class="font-mono text-orange-600">${f.currencyLabel||f.currency} ${fmtN(f.origReinvDet)}</span>`;
     case 'reinvAmt':  return `<span class="font-mono text-orange-700">$${fmtM(f.reinvDet)}</span>`;
     case 'reinvUnits':return `<span class="font-mono text-orange-700">${fmtN(f.reinvUnitsDet,4,4)}</span>`;
     case 'nextDiv':   return `<span class="font-mono text-indigo-700">${fmtN(f.nextDivDet,4,4)}</span>`;
@@ -2749,7 +2756,7 @@ function t4CalcDivAdjustedSeries(fund, allDates, gi){
     const row = state.t3_pRows.find(r=>r.date===date);
     if(!row || row[fund]===undefined) return null;
     let val = row[fund];
-    if(useFX && isUSD) val *= t3GetFX(date);
+    if(useFX) val *= t3FxMult(fund, date, state.t3_ccy);
     return val;
   });
 
@@ -3500,6 +3507,7 @@ document.getElementById('t4-date-end').onchange   = ()=>t4Redraw();
 
 // ─── Tab3 輔助函數 ────────────────────────────────────────
 function t3IsUSD(fund){ return fund && fund.toUpperCase().startsWith('USD'); }
+function t3IsJPY(fund){ return fund && fund.toUpperCase().startsWith('JPY'); }
 
 function t3GetFX(date){
   if(state.t3_fxMap[date]) return state.t3_fxMap[date];
@@ -3507,6 +3515,34 @@ function t3GetFX(date){
   let best = null;
   for(const k of keys){ if(k <= date) best = k; else break; }
   return best ? state.t3_fxMap[best] : 31.5;
+}
+function t3GetJPYFX(date){
+  if(state.t3_jpyMap[date]) return state.t3_jpyMap[date];
+  const keys = Object.keys(state.t3_jpyMap).sort();
+  let best = null;
+  for(const k of keys){ if(k <= date) best = k; else break; }
+  return best ? state.t3_jpyMap[best] : 0.22;
+}
+// 取得某標的在某日期的「換算成目標幣別」的乘數
+function t3FxMult(fund, date, toCcy){
+  const isUSD = t3IsUSD(fund);
+  const isJPY = t3IsJPY(fund);
+  const usdFx  = t3GetFX(date);
+  const jpyFx  = t3GetJPYFX(date);
+  if(toCcy==='NTD'){
+    if(isUSD) return usdFx;
+    if(isJPY) return jpyFx;
+    return 1;
+  } else if(toCcy==='USD'){
+    if(isUSD) return 1;
+    if(isJPY) return jpyFx / usdFx;  // 交叉匯率
+    return 1 / usdFx;
+  } else if(toCcy==='JPY'){
+    if(isJPY) return 1;
+    if(isUSD) return usdFx / jpyFx;  // 交叉匯率
+    return 1 / jpyFx;
+  }
+  return 1;
 }
 
 function t3GetPrice(date, fund){
@@ -3529,28 +3565,30 @@ function t3CalcVal(date, holdings){
       // 計入時：NTD配息直接加，USD配息乘匯率換成NTD再換算
       const fxNow = t3GetFX(date);
       const ntd   = f==='USD現金配息' ? u * fxNow : u;
-      tot += state.t3_ccy==='NTD' ? ntd : ntd / fxNow;
+      tot += state.t3_ccy==='NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/t3GetJPYFX(date) : ntd / fxNow;
       continue;
     }
     const p = t3GetPrice(date, f);
     if(p === undefined) continue;
     const ntd = t3IsUSD(f) ? u * p * fx : u * p;
-    tot += state.t3_ccy === 'NTD' ? ntd : ntd / fx;
+    tot += state.t3_ccy === 'NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/t3GetJPYFX(date) : ntd / fx;
   }
   return tot;
 }
 
 function t3ParsePrice(rows){
-  state.t3_pRows=[]; state.t3_fxMap={};
+  state.t3_pRows=[]; state.t3_fxMap={}; state.t3_jpyMap={};
   const hdr=rows[2]; if(!hdr) return;
   const hdrs=hdr.slice(1).map(h=>String(h||'').trim());
-  const fxCol=hdrs.findIndex(h=>h==='美元兌新台幣匯率');
+  const fxCol =hdrs.findIndex(h=>h==='美元兌新台幣匯率');
+  const jpyCol=hdrs.findIndex(h=>h==='日圓兌新台幣匯率');
   for(let i=3;i<rows.length;i++){
     const row=rows[i]; if(!row||!row[1]||!String(row[1]).trim()) continue;
     const date=normDate(row[1]); if(!date) continue;
     const obj={date};
     for(let c=1;c<hdrs.length;c++){ const k=hdrs[c]; if(!k) continue; const v=parseFloat(String(row[c+1]||'').replace(/,/g,'')); if(!isNaN(v)&&v>0) obj[k]=v; }
     if(fxCol>=0){ const fv=parseFloat(String(row[fxCol+1]||'').replace(/,/g,'')); if(!isNaN(fv)&&fv>1) state.t3_fxMap[date]=fv; }
+    if(jpyCol>=0){ const jv=parseFloat(String(row[jpyCol+1]||'').replace(/,/g,'')); if(!isNaN(jv)&&jv>0) state.t3_jpyMap[date]=jv; }
     state.t3_pRows.push(obj);
   }
   state.t3_pRows.sort((a,b)=>a.date.localeCompare(b.date));
@@ -4195,7 +4233,7 @@ function t3Redraw(){
       });
       const cumData = dates.map(date=>{
         const v = (sr.cashDivSnap[date]||{total_ntd:0}).total_ntd;
-        return state.t3_ccy==='NTD' ? v : v/t3GetFX(date);
+        return state.t3_ccy==='NTD' ? v : state.t3_ccy==='JPY' ? v/t3GetJPYFX(date) : v/t3GetFX(date);
       });
       datasets.push({
         type: 'line',
@@ -4359,8 +4397,8 @@ function t3ShowTip(ctx, dates, seriesList){
   if(divHit){
     const ds   = state.t3_chart.data.datasets[divHit.datasetIndex];
     const amt  = divHit.raw;
-    const sym  = state.t3_ccy==='NTD' ? 'NT$' : 'US$';
-    const dispAmt = state.t3_ccy==='NTD' ? amt : amt/t3GetFX(dates[divHit.dataIndex]);
+    const sym  = state.t3_ccy==='NTD' ? 'NT$' : state.t3_ccy==='JPY' ? '¥' : 'US$';
+    const dispAmt = state.t3_ccy==='NTD' ? amt : state.t3_ccy==='JPY' ? amt/t3GetJPYFX(dates[divHit.dataIndex]) : amt/t3GetFX(dates[divHit.dataIndex]);
     box.innerHTML=`<div style="font-weight:500;font-size:13px;color:#92400e;margin-bottom:4px;">💰 ${ds.label}</div>
       <div style="font-size:12px;color:#1a1a1a;font-weight:600;">${sym}${Math.round(dispAmt).toLocaleString()}</div>`;
     box.style.display='block';
@@ -4377,7 +4415,7 @@ function t3ShowTip(ctx, dates, seriesList){
   const prevDate= idx > 0 ? dates[idx-1] : null;
   const fx      = t3GetFX(date);
   const fxPrev  = prevDate ? t3GetFX(prevDate) : null;
-  const sym     = state.t3_ccy==='NTD' ? 'NT$' : 'US$';
+  const sym     = state.t3_ccy==='NTD' ? 'NT$' : state.t3_ccy==='JPY' ? '¥' : 'US$';
   const showD   = state.t3_showDiff;
 
   // 工具：產生比較箭頭 HTML（上漲=紅↑，下跌=綠↓）
@@ -4426,17 +4464,17 @@ function t3ShowTip(ctx, dates, seriesList){
         // 現金配息計入模式：顯示累計金額（無淨值，直接以金額呈現）
         const isUSD  = f==='USD現金配息';
         const ntd    = isUSD ? u * fx : u;
-        const disp   = state.t3_ccy==='NTD' ? ntd : ntd/fx;
+        const disp   = state.t3_ccy==='NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/t3GetJPYFX(date) : ntd/fx;
         grpNTD += ntd;
         const uPrev  = hPrev[f]!==undefined ? hPrev[f] : u;
         const ntdP   = isUSD ? uPrev*(fxPrev||fx) : uPrev;
-        const dispP  = state.t3_ccy==='NTD' ? ntdP : ntdP/(fxPrev||fx);
+        const dispP  = state.t3_ccy==='NTD' ? ntdP : state.t3_ccy==='JPY' ? ntdP/(t3GetJPYFX(prevDate||date)) : ntdP/(fxPrev||fx);
         grpNTDPrev  += ntdP;
         const uDiff  = u - uPrev;
         const uDiffStr = uDiff!==0 ? (uDiff>0?' ▲':' ▼') : '';
         const uDiffCol = uDiff>0 ? '#e53935' : uDiff<0 ? '#1D9E75' : '#888';
         const dispArrow = diffArrow(disp, dispP, v=>Math.round(v).toLocaleString()) + diffArrowPct(disp, dispP);
-        const pSym = isUSD ? 'US$' : 'NT$';
+        const pSym = isUSD ? 'US$' : (f==='JPY現金配息' ? '¥' : 'NT$');
         const dotCol = '#f59e0b';
         html += `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:4px;margin-bottom:2px;">
           <span style="width:8px;height:8px;border-radius:2px;background:${dotCol};display:inline-block;"></span>
@@ -4457,7 +4495,7 @@ function t3ShowTip(ctx, dates, seriesList){
       const fLabel = t3FundLabel(f, 't3');
       const isUSD  = t3IsUSD(f);
       const ntd    = isUSD ? u*p*fx : u*p;
-      const disp   = state.t3_ccy==='NTD' ? ntd : ntd/fx;
+      const disp   = state.t3_ccy==='NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/t3GetJPYFX(date) : ntd/fx;
       grpNTD += ntd;
 
       // 前日數值
@@ -4465,7 +4503,7 @@ function t3ShowTip(ctx, dates, seriesList){
       const pPrev  = prevDate ? t3GetPrice(prevDate, f) : p;
       const fxP    = fxPrev || fx;
       const ntdP   = pPrev!==undefined ? (isUSD ? uPrev*pPrev*fxP : uPrev*pPrev) : ntd;
-      const dispP  = state.t3_ccy==='NTD' ? ntdP : ntdP/fxP;
+      const dispP  = state.t3_ccy==='NTD' ? ntdP : state.t3_ccy==='JPY' ? ntdP/t3GetJPYFX(prevDate||date) : ntdP/fxP;
       grpNTDPrev  += (pPrev!==undefined ? ntdP : ntd);
 
       // 單位變化（保留原色）
@@ -4478,7 +4516,7 @@ function t3ShowTip(ctx, dates, seriesList){
       const pArrow    = pPrev!==undefined ? diffArrow(p, pPrev, v=>v.toFixed(4)) : '';
       const dispArrow = diffArrow(disp, dispP, v=>Math.round(v).toLocaleString()) + diffArrowPct(disp, dispP);
 
-      const pSym  = isUSD ? 'US$' : 'NT$';
+      const pSym  = isUSD ? 'US$' : t3IsJPY(f) ? '¥' : 'NT$';
       const dotCol= T3_COLORS[ri % T3_COLORS.length];
       html += `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:4px;margin-bottom:2px;">
         <span style="width:8px;height:8px;border-radius:2px;background:${dotCol};display:inline-block;"></span>
@@ -4493,8 +4531,8 @@ function t3ShowTip(ctx, dates, seriesList){
       ri++;
     }
 
-    const grpDisp     = state.t3_ccy==='NTD' ? grpNTD     : grpNTD/fx;
-    const grpDispPrev = state.t3_ccy==='NTD' ? grpNTDPrev : grpNTDPrev/(fxPrev||fx);
+    const grpDisp     = state.t3_ccy==='NTD' ? grpNTD     : state.t3_ccy==='JPY' ? grpNTD/t3GetJPYFX(date) : grpNTD/fx;
+    const grpDispPrev = state.t3_ccy==='NTD' ? grpNTDPrev : state.t3_ccy==='JPY' ? grpNTDPrev/(t3GetJPYFX(prevDate||date)) : grpNTDPrev/(fxPrev||fx);
     const grpArrow    = diffArrow(grpDisp, grpDispPrev, v=>Math.round(v).toLocaleString()) + diffArrowPct(grpDisp, grpDispPrev);
     grandTotNTD     += grpNTD;
     grandTotNTDPrev += grpNTDPrev;
@@ -4538,7 +4576,7 @@ function t3ShowTip(ctx, dates, seriesList){
           <span>合計（NTD）</span><span>${sym}${t3FmtN(totalDisp)}${totArrow}</span></div>`;
         textLines.push(`  配息合計：${sym}${t3FmtN(totalDisp)}`);
         if(lastDivAmt > 0){
-          const lastDisp = state.t3_ccy==='NTD' ? lastDivAmt : lastDivAmt / t3GetFX(lastDivDate);
+          const lastDisp = state.t3_ccy==='NTD' ? lastDivAmt : state.t3_ccy==='JPY' ? lastDivAmt/t3GetJPYFX(lastDivDate) : lastDivAmt / t3GetFX(lastDivDate);
           html += `<div style="font-size:10px;color:#92400e;display:flex;justify-content:space-between;margin-top:2px;">
             <span>最近一次配息</span><span>${sym}${t3FmtN(lastDisp)} (${lastDivDate})</span></div>`;
           textLines.push(`  最近一次：${sym}${t3FmtN(lastDisp)} (${lastDivDate})`);
@@ -4588,7 +4626,7 @@ document.getElementById('tip').addEventListener('mouseenter',()=>{ state.t3_tipL
 document.getElementById('tip').addEventListener('mouseleave',()=>{ state.t3_tipLocked=false; });
 
 function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
-  const sym     = state.t3_ccy==='NTD' ? 'NT$' : 'US$';
+  const sym     = state.t3_ccy==='NTD' ? 'NT$' : state.t3_ccy==='JPY' ? '¥' : 'US$';
   const el      = document.getElementById('t3-cards');
   const inclDiv = state.t3_includeCashDiv;
   const divLabelColor = inclDiv ? '#e53935' : '#1565c0';
@@ -4605,7 +4643,7 @@ function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
       const cd = snap[lastDate] || {total_ntd:0};
       totalNTD += cd.total_ntd || 0;
     });
-    return state.t3_ccy==='NTD' ? totalNTD : totalNTD / t3GetFX(lastDate);
+    return state.t3_ccy==='NTD' ? totalNTD : state.t3_ccy==='JPY' ? totalNTD/t3GetJPYFX(lastDate) : totalNTD / t3GetFX(lastDate);
   }
 
   if(state.t3_mode === 'split' && seriesList.length > 1){
@@ -4620,7 +4658,7 @@ function t3RenderCards(seriesList, totalVals, dates, cashDivSnaps){
       const snap     = cashDivSnaps && cashDivSnaps[si];
       const lastDate = dates[dates.length-1];
       const cd       = snap ? (snap[lastDate]||{total_ntd:0}) : {total_ntd:0};
-      const divDisp  = state.t3_ccy==='NTD' ? (cd.total_ntd||0) : (cd.total_ntd||0)/t3GetFX(lastDate);
+      const divDisp  = state.t3_ccy==='NTD' ? (cd.total_ntd||0) : state.t3_ccy==='JPY' ? (cd.total_ntd||0)/t3GetJPYFX(lastDate) : (cd.total_ntd||0)/t3GetFX(lastDate);
       const divRow   = divDisp>0 ? `<div style="font-size:10px;color:#92400e;margin-top:1px;">💰 ${sym}${t3FmtN(divDisp)}</div>` : '';
       return `<div class="card-metric" style="border-left:3px solid ${sr.color};">
         <div class="label" style="color:${sr.color};">${sr.key}</div>
@@ -4892,6 +4930,7 @@ function t3SetCcy(c){
   state.t3_ccy = c;
   document.getElementById('t3-btn-ntd').className = c==='NTD' ? 'btn btn-primary text-xs' : 'btn text-xs';
   document.getElementById('t3-btn-usd').className = c==='USD' ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-jpy').className = c==='JPY' ? 'btn btn-primary text-xs' : 'btn text-xs';
   t3Redraw();
 }
 
@@ -5485,7 +5524,7 @@ function t5CalcFundSeries(fund, allDates){
     const row = state.t3_pRows.find(r=>r.date===date);
     if(!row||row[fund]===undefined) return null;
     let nav = row[fund];
-    if(useFX && isUSD) nav *= t3GetFX(date);
+    if(useFX){ if(isUSD) nav *= t3GetFX(date); else if(t3IsJPY(fund)) nav *= t3GetJPYFX(date); }
     const um = unitsMult ? unitsMult[i] : 1;
     return nav * um;  // 每單位的累積價值（含配息再投資）
   });
@@ -5518,7 +5557,7 @@ function t5CalcGroupSeries(gi, allDates){
       const row=state.t3_pRows.find(r=>r.date===date);
       if(!row||row[fund]===undefined) return null;
       let nav=row[fund];
-      if(useFX&&isUSD) nav*=t3GetFX(date);
+      if(useFX){ if(isUSD) nav*=t3GetFX(date); else if(t3IsJPY(fund)) nav*=t3GetJPYFX(date); }
       // 計入配息再投資時，等效淨值 = 原淨值 × 累積單位倍率
       if(unitsMult) nav *= unitsMult[i];
       return nav;
@@ -5659,7 +5698,7 @@ function t5Redraw(){
       const series = allDates.map(date=>{
         const row=state.t3_pRows.find(r=>r.date===date);
         if(!row||row[fund]===undefined) return null;
-        let val=row[fund]; if(useFX&&isUSD) val*=t3GetFX(date); return val;
+        let val=row[fund]; if(useFX){ if(isUSD) val*=t3GetFX(date); else if(t3IsJPY(fund)) val*=t3GetJPYFX(date); } return val;
       });
       const baseIdx=series.findIndex(v=>v!==null&&v!==undefined);
       if(baseIdx===-1) return;
@@ -6243,7 +6282,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.64
+// Fund Portfolio Dashboard — 整合版 V2.65
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
