@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.65 (整合版)
+     版本：V2.66 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1169,10 +1169,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.65  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.66  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.65 (整合版)';
+const APP_VERSION = 'V2.66 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -4441,8 +4441,12 @@ function t3ShowTip(ctx, dates, seriesList){
   // 匯率行
   const fxArrow = diffArrow(fx, fxPrev, v=>v.toFixed(4));
   let html = `<div style="font-weight:500;font-size:13px;color:#1a1a1a;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">${date}</div>`;
-  html += `<div style="font-size:11px;color:#888;margin-bottom:7px;">美元兌新台幣匯率：${fx.toFixed(4)}${fxArrow}</div>`;
-  let textLines = [`日期：${date}`, `匯率：${fx.toFixed(4)}${fxPrev?` (前日:${fxPrev.toFixed(4)})`:''}`,'──────────────────'];
+  const jpyFxNow  = t3GetJPYFX(date);
+  const jpyFxPrev = prevDate ? t3GetJPYFX(prevDate) : null;
+  const jpyFxArrow = diffArrow(jpyFxNow, jpyFxPrev, v=>v.toFixed(4));
+  html += `<div style="font-size:11px;color:#888;margin-bottom:2px;">美元兌新台幣匯率：${fx.toFixed(4)}${fxArrow}</div>`;
+  html += `<div style="font-size:11px;color:#888;margin-bottom:7px;">日圓兌新台幣匯率：${jpyFxNow.toFixed(4)}${jpyFxArrow}</div>`;
+  let textLines = [`日期：${date}`, `美元匯率：${fx.toFixed(4)}`, `日圓匯率：${jpyFxNow.toFixed(4)}`,'──────────────────'];
   let grandTotNTD = 0, grandTotNTDPrev = 0;
 
   seriesList.forEach(sr=>{
@@ -4494,7 +4498,9 @@ function t3ShowTip(ctx, dates, seriesList){
       if(p===undefined) continue;
       const fLabel = t3FundLabel(f, 't3');
       const isUSD  = t3IsUSD(f);
-      const ntd    = isUSD ? u*p*fx : u*p;
+      const isJPY  = t3IsJPY(f);
+      const jpyFx  = t3GetJPYFX(date);
+      const ntd    = isUSD ? u*p*fx : isJPY ? u*p*jpyFx : u*p;
       const disp   = state.t3_ccy==='NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/t3GetJPYFX(date) : ntd/fx;
       grpNTD += ntd;
 
@@ -4502,7 +4508,8 @@ function t3ShowTip(ctx, dates, seriesList){
       const uPrev  = hPrev[f]!==undefined ? hPrev[f] : u;
       const pPrev  = prevDate ? t3GetPrice(prevDate, f) : p;
       const fxP    = fxPrev || fx;
-      const ntdP   = pPrev!==undefined ? (isUSD ? uPrev*pPrev*fxP : uPrev*pPrev) : ntd;
+      const jpyFxP = prevDate ? t3GetJPYFX(prevDate) : jpyFx;
+      const ntdP   = pPrev!==undefined ? (isUSD ? uPrev*pPrev*fxP : isJPY ? uPrev*pPrev*jpyFxP : uPrev*pPrev) : ntd;
       const dispP  = state.t3_ccy==='NTD' ? ntdP : state.t3_ccy==='JPY' ? ntdP/t3GetJPYFX(prevDate||date) : ntdP/fxP;
       grpNTDPrev  += (pPrev!==undefined ? ntdP : ntd);
 
@@ -4520,7 +4527,7 @@ function t3ShowTip(ctx, dates, seriesList){
       const dotCol= T3_COLORS[ri % T3_COLORS.length];
       html += `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:4px;margin-bottom:2px;">
         <span style="width:8px;height:8px;border-radius:2px;background:${dotCol};display:inline-block;"></span>
-        <span style="font-size:11px;color:#555;">${fLabel} <span style="font-size:10px;color:#bbb;">(${isUSD?'USD':'NTD'})</span></span>
+        <span style="font-size:11px;color:#555;">${fLabel} <span style="font-size:10px;color:#bbb;">(${isUSD?'USD':isJPY?'JPY':'NTD'})</span></span>
         <span style="font-size:11px;color:#1a1a1a;font-weight:500;">${sym}${t3FmtN(disp)}${dispArrow}</span>
       </div>
       <div style="font-size:10px;margin-bottom:4px;padding-left:12px;">
@@ -6282,7 +6289,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.65
+// Fund Portfolio Dashboard — 整合版 V2.66
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
