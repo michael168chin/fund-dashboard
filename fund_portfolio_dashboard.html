@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.66 (整合版)
+     版本：V2.67 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1169,10 +1169,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.66  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.67  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.66 (整合版)';
+const APP_VERSION = 'V2.67 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3570,8 +3570,9 @@ function t3CalcVal(date, holdings){
     }
     const p = t3GetPrice(date, f);
     if(p === undefined) continue;
-    const ntd = t3IsUSD(f) ? u * p * fx : u * p;
-    tot += state.t3_ccy === 'NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/t3GetJPYFX(date) : ntd / fx;
+    const jpyFxC = t3GetJPYFX(date);
+    const ntd = t3IsUSD(f) ? u * p * fx : t3IsJPY(f) ? u * p * jpyFxC : u * p;
+    tot += state.t3_ccy === 'NTD' ? ntd : state.t3_ccy==='JPY' ? ntd/jpyFxC : ntd / fx;
   }
   return tot;
 }
@@ -6289,7 +6290,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.66
+// Fund Portfolio Dashboard — 整合版 V2.67
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
