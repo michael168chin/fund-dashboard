@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.7.1
+     系統版本：v1.7.2
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.1</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.2</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.7.1';
+    const APP_VERSION = 'v1.7.2';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -521,13 +521,13 @@
                         </h2>
                       ) : (
                         <>
-                          {detectedTargetName && (
+                          {detectedTargetName && detectedTargetCode && (
                             <h3 className="text-lg md:text-xl font-bold text-gray-600 mb-1 leading-tight tracking-wide">
                               {detectedTargetName}
                             </h3>
                           )}
                           <h2 className="text-4xl md:text-6xl font-black text-blue-900 tracking-tighter">
-                            {detectedTargetCode || customTargetCode || '未知標的'}
+                            {detectedTargetCode || customTargetCode || detectedTargetName || '未知標的'}
                           </h2>
                         </>
                       )}
@@ -778,7 +778,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.7.1
+     系統版本：v1.7.2
      程式結束 / END OF FILE
      ========================================== -->
 </html>
