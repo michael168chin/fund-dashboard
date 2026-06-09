@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.7.0
+     系統版本：v1.7.1
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.0</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.1</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.7.0';
+    const APP_VERSION = 'v1.7.1';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -273,6 +273,7 @@
         { label: 'iShares MSCI 南韓ETF(EWY)', code: 'USD南韓ETF(EWY)',           type: 'investing', url: 'https://www.investing.com/etfs/ishares-south-korea-index-historical-data',                         keywords: ['iShares MSCI South Korea ETF (EWY)', 'EWY ETF Stock Price History'] },
         { label: 'USD道瓊工業指數',           code: 'USD道瓊工業指數',           type: 'investing', url: 'https://www.investing.com/indices/us-30-historical-data',                                           keywords: ['Dow Jones Industrial Average (DJI)', 'Dow Jones Industrial Average Historical'] },
         { label: 'iShares天然氣',             code: 'USDET1610',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/VXFTN/target-information/USDET1610/FUND_PRICE', keywords: ['USDET1610'] },
+        { label: 'iShares半導體',             code: 'USDET0330',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/V3N/target-information/USDET0330/FUND_PRICE',   keywords: ['USDET0330'] },
       ];
 
       const [selectedIndexKey, setSelectedIndexKey] = useState(0); // 選擇的指數索引
@@ -777,7 +778,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.7.0
+     系統版本：v1.7.1
      程式結束 / END OF FILE
      ========================================== -->
 </html>
