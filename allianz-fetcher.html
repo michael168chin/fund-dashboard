@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.6.8
+     系統版本：v1.6.9
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.8</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.9</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.6.8';
+    const APP_VERSION = 'v1.6.9';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -152,7 +152,10 @@
         let ratesList = [];
         const cleanText = htmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
         setDetectedTargetCode('');
-        setDetectedTargetName('美元兌新台幣匯率');
+
+        // 偵測是否為日圓兌新台幣：同時包含「日圓」、「兌換前幣別」、「新台幣」、「兌換後幣別」
+        const isJPY = ['日圓', '兌換前幣別', '新台幣', '兌換後幣別'].every(kw => cleanText.includes(kw));
+        setDetectedTargetName(isJPY ? '日圓兌新台幣匯率' : '美元兌新台幣匯率');
         const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+\.[0-9]+)\s+([0-9]+\.[0-9]+)/g;
         let match;
         while ((match = regex.exec(cleanText)) !== null) {
@@ -393,6 +396,7 @@
           const targetHeader = activeTab === 'fund-manual'   ? 'NTDMD0020' :
                                activeTab === 'custom-target' ? customTargetCode.trim().toUpperCase() :
                                activeTab === 'twse-index'    ? detectedTargetCode :
+                               (activeTab === 'manual' || activeTab === 'auto') ? detectedTargetName :
                                                                '美元兌新台幣匯率';
           let successCount = 0;
           for (let i = 0; i < finalProcessedRates.length; i++) {
@@ -771,7 +775,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.6.8
+     系統版本：v1.6.9
      程式結束 / END OF FILE
      ========================================== -->
 </html>
