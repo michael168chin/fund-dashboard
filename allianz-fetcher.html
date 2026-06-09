@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.6.7
+     系統版本：v1.6.8
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.7</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.6.8</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.6.7';
+    const APP_VERSION = 'v1.6.8';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -262,11 +262,12 @@
         else parseExchangeRateData(manualText);
       };
 
-      // ── investing.com 指數解析（英文日期格式，取 Date + Price 欄）──
+      // ── 指數/標的清單（type: 'investing' 或 'allianz'）──────────
       const INVESTING_INDICES = [
-        { label: 'NTD台股加權股價指數',      code: 'NTD台股加權股價指數',      url: 'https://www.investing.com/indices/taiwan-weighted-historical-data',          keywords: ['Taiwan Weighted (TWII)', 'Taiwan Weighted Historical'] },
-        { label: 'iShares MSCI 南韓ETF(EWY)', code: 'USD南韓ETF(EWY)',           url: 'https://www.investing.com/etfs/ishares-south-korea-index-historical-data', keywords: ['iShares MSCI South Korea ETF (EWY)', 'EWY ETF Stock Price History'] },
-        { label: 'USD道瓊工業指數',           code: 'USD道瓊工業指數',           url: 'https://www.investing.com/indices/us-30-historical-data',                    keywords: ['Dow Jones Industrial Average (DJI)', 'Dow Jones Industrial Average Historical'] },
+        { label: 'NTD台股加權股價指數',      code: 'NTD台股加權股價指數',      type: 'investing', url: 'https://www.investing.com/indices/taiwan-weighted-historical-data',                                    keywords: ['Taiwan Weighted (TWII)', 'Taiwan Weighted Historical'] },
+        { label: 'iShares MSCI 南韓ETF(EWY)', code: 'USD南韓ETF(EWY)',           type: 'investing', url: 'https://www.investing.com/etfs/ishares-south-korea-index-historical-data',                         keywords: ['iShares MSCI South Korea ETF (EWY)', 'EWY ETF Stock Price History'] },
+        { label: 'USD道瓊工業指數',           code: 'USD道瓊工業指數',           type: 'investing', url: 'https://www.investing.com/indices/us-30-historical-data',                                           keywords: ['Dow Jones Industrial Average (DJI)', 'Dow Jones Industrial Average Historical'] },
+        { label: 'iShares天然氣',             code: 'USDET1610',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/VXFTN/target-information/USDET1610/FUND_PRICE', keywords: ['USDET1610'] },
       ];
 
       const [selectedIndexKey, setSelectedIndexKey] = useState(0); // 選擇的指數索引
@@ -286,29 +287,41 @@
         setDetectedTargetCode(autoDetected.code);
         setDetectedTargetName(autoDetected.label);
 
-        // investing.com 格式：Apr 24, 2026  38,932.40  ...
-        const monthMap = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06',
-                           Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
-
-        const regex = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\s+([\d,]+\.?\d*)/g;
-        let match;
-        while ((match = regex.exec(cleanText)) !== null) {
-          const mm = monthMap[match[1]];
-          const dd = match[2].padStart(2, '0');
-          const yyyy = match[3];
-          const adDate = `${yyyy}/${mm}/${dd}`;
-          const price = match[4].replace(/,/g, '');
-          indexList.push({ date: adDate, value: price });
-        }
-
-        if (indexList.length > 0) {
-          setFetchedData(indexList[0]);
-          setHistoryRates(indexList);
-          updateDefaultDateRange(indexList);
-          setFetchError('');
+        if (autoDetected.type === 'allianz') {
+          // 安聯格式：2026/04/24   12.3456
+          const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)/g;
+          let match;
+          while ((match = regex.exec(cleanText)) !== null) {
+            indexList.push({ date: match[1], value: match[2] });
+          }
+          if (indexList.length === 0) {
+            setFetchError('無法解析安聯淨值資料，請確認貼上內容格式正確。');
+            return;
+          }
         } else {
-          setFetchError('無法解析指數資料，請確認貼上內容是否包含 investing.com 的歷史資料表格。');
+          // investing.com 英文格式：Apr 24, 2026  38,932.40  ...
+          const monthMap = { Jan:'01', Feb:'02', Mar:'03', Apr:'04', May:'05', Jun:'06',
+                             Jul:'07', Aug:'08', Sep:'09', Oct:'10', Nov:'11', Dec:'12' };
+          const regex = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\s+([\d,]+\.?\d*)/g;
+          let match;
+          while ((match = regex.exec(cleanText)) !== null) {
+            const mm = monthMap[match[1]];
+            const dd = match[2].padStart(2, '0');
+            const yyyy = match[3];
+            const adDate = `${yyyy}/${mm}/${dd}`;
+            const price = match[4].replace(/,/g, '');
+            indexList.push({ date: adDate, value: price });
+          }
+          if (indexList.length === 0) {
+            setFetchError('無法解析指數資料，請確認貼上內容是否包含 investing.com 的歷史資料表格。');
+            return;
+          }
         }
+
+        setFetchedData(indexList[0]);
+        setHistoryRates(indexList);
+        updateDefaultDateRange(indexList);
+        setFetchError('');
       };
 
       const filterData = useMemo(() => {
@@ -758,7 +771,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.6.7
+     系統版本：v1.6.8
      程式結束 / END OF FILE
      ========================================== -->
 </html>
