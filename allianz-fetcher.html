@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.7.5
+     系統版本：v1.7.7
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.5</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.7</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.7.5';
+    const APP_VERSION = 'v1.7.7';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -280,7 +280,9 @@
         { label: 'iShares天然氣',             code: 'USDET1610',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/VXFTN/target-information/USDET1610/FUND_PRICE', keywords: ['USDET1610'] },
         { label: 'iShares半導體',             code: 'USDET0330',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/V3N/target-information/USDET0330/FUND_PRICE',   keywords: ['USDET0330'] },
         { label: 'iShare美國醫療設備',        code: 'USDET1280',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/V3N/target-information/USDET1280/FUND_PRICE',   keywords: ['USDET1280'] },
-        { label: '日經225ETF',                code: 'JPYET0010',                 type: 'allianz',   url: 'https://es.allianz.com.tw/customer/product/investment/VU/target-information/JPYET0010/FUND_PRICE',    keywords: ['JPYET0010'] },
+        { label: '日經225ETF',                   code: 'JPYET0010',  type: 'allianz', url: 'https://es.allianz.com.tw/customer/product/investment/VASZ/target-information/JPYET0010/FUND_PRICE',  keywords: ['JPYET0010'] },
+        { label: 'SPDR S&P油氣開採及生產',        code: 'USDET1310',  type: 'allianz', url: 'https://es.allianz.com.tw/customer/product/investment/VASZ/target-information/USDET1310/FUND_PRICE',  keywords: ['USDET1310'] },
+        { label: 'SPDR S&P油氣設備及服務',        code: 'USDET1320',  type: 'allianz', url: 'https://es.allianz.com.tw/customer/product/investment/VASZ/target-information/USDET1320/FUND_PRICE',  keywords: ['USDET1320'] },
       ];
 
       const [selectedIndexKey, setSelectedIndexKey] = useState(0); // 選擇的指數索引
@@ -785,7 +787,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.7.5
+     系統版本：v1.7.7
      程式結束 / END OF FILE
      ========================================== -->
 </html>
