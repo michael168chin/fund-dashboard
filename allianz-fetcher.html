@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.7.7
+     系統版本：v1.7.8
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.7</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.7.8</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.7.7';
+    const APP_VERSION = 'v1.7.8';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -183,10 +183,10 @@
         setDetectedTargetCode(code);
         setDetectedTargetName(name);
 
-        const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)/g;
+        const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/g;
         let match;
         while ((match = regex.exec(cleanText)) !== null) {
-          fundList.push({ date: match[1], value: match[2] });
+          fundList.push({ date: match[1], value: match[2].replace(/,/g, '') });
         }
         if (fundList.length > 0) {
           setFetchedData(fundList[0]);
@@ -303,11 +303,11 @@
         setDetectedTargetName(autoDetected.label);
 
         if (autoDetected.type === 'allianz') {
-          // 安聯格式：2026/04/24   12.3456
-          const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]+(?:\.[0-9]+)?)/g;
+          // 安聯格式：2026/04/24   12.3456 或 92,689（日圓計價有千分號）
+          const regex = /(\d{4}\/\d{2}\/\d{2})\s+([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?)/g;
           let match;
           while ((match = regex.exec(cleanText)) !== null) {
-            indexList.push({ date: match[1], value: match[2] });
+            indexList.push({ date: match[1], value: match[2].replace(/,/g, '') });
           }
           if (indexList.length === 0) {
             setFetchError('無法解析安聯淨值資料，請確認貼上內容格式正確。');
@@ -787,7 +787,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.7.7
+     系統版本：v1.7.8
      程式結束 / END OF FILE
      ========================================== -->
 </html>
