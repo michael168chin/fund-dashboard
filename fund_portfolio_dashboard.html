@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.69 (整合版)
+     版本：V2.70 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1169,10 +1169,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.69  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.70  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.69 (整合版)';
+const APP_VERSION = 'V2.70 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1291,6 +1291,7 @@ let state = {
   t3_includeCashDiv: false, // 現金配息計入走勢曲線（預設不計入）
   t3_showDivBars: false,    // 圖表下方顯示各組配息柱狀圖（預設隱藏）
   t3_showTip: true,         // Tab3 滑鼠移動明細（預設顯示）
+  t3_tipMode: localStorage.getItem('t3_tipMode') || 'detail', // 'detail'=標的明細, 'group'=組合彙總
   t3_curDates: [],          // t3Redraw 最新的 dates（供 click handler 使用）
   t3_curSeries: [],         // t3Redraw 最新的 seriesList
   t4_curDates: [],          // t4Redraw 最新的 allDates
@@ -4389,6 +4390,7 @@ function t3ShowTip(ctx, dates, seriesList){
   if(ctx.tooltip.opacity===0){ if(!state.t3_tipLocked) box.style.display='none'; return; }
   if(!state.t3_showTip && !state.t3_tipLocked){ box.style.display='none'; return; }
   if(state.t3_tipLocked) return;
+  state.t3_lastTipCtx = ctx;  // 記錄最後一次 ctx，供 t3SetTipMode 重繪用
   const dps = ctx.tooltip.dataPoints;
   // 若點到 💰 配息散點，顯示配息金額
   const divHit = dps.find(dp=>{
@@ -4441,7 +4443,18 @@ function t3ShowTip(ctx, dates, seriesList){
 
   // 匯率行
   const fxArrow = diffArrow(fx, fxPrev, v=>v.toFixed(4));
-  let html = `<div style="font-weight:500;font-size:13px;color:#1a1a1a;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">${date}</div>`;
+  // ── 模式切換按鈕 ──
+  const _btnBase = 'font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;border:1px solid #e2e8f0;';
+  const _btnOn   = _btnBase + 'background:#3b82f6;color:#fff;font-weight:600;';
+  const _btnOff  = _btnBase + 'background:#f8fafc;color:#64748b;';
+  const _isDetail = state.t3_tipMode === 'detail';
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;border-bottom:1px solid #eee;padding-bottom:4px;">
+    <span style="font-weight:500;font-size:13px;color:#1a1a1a;">${date}</span>
+    <div style="display:flex;gap:3px;">
+      <button style="${_isDetail?_btnOn:_btnOff}" onclick="t3SetTipMode('detail')">明細</button>
+      <button style="${!_isDetail?_btnOn:_btnOff}" onclick="t3SetTipMode('group')">彙總</button>
+    </div>
+  </div>`;
   const jpyFxNow  = t3GetJPYFX(date);
   const jpyFxPrev = prevDate ? t3GetJPYFX(prevDate) : null;
   const jpyFxArrow = diffArrow(jpyFxNow, jpyFxPrev, v=>v.toFixed(4));
@@ -4455,9 +4468,11 @@ function t3ShowTip(ctx, dates, seriesList){
     const hPrev = prevDate ? (sr.snapshots[prevDate]||{}) : {};
     let grpNTD = 0, grpNTDPrev = 0;
 
+    // 組合標題（兩種模式都顯示）
     html += `<div style="font-size:12px;font-weight:500;color:${sr.color};margin:5px 0 3px;display:flex;align-items:center;gap:4px;">
       <span style="width:10px;height:3px;border-radius:2px;background:${sr.color};display:inline-block;"></span>${sr.key}</div>`;
     textLines.push(`▸ ${sr.key}`);
+    const _detailMode = state.t3_tipMode === 'detail';
 
     let ri = 0;
     for(const [f,u] of Object.entries(h)){
@@ -4514,29 +4529,31 @@ function t3ShowTip(ctx, dates, seriesList){
       const dispP  = state.t3_ccy==='NTD' ? ntdP : state.t3_ccy==='JPY' ? ntdP/t3GetJPYFX(prevDate||date) : ntdP/fxP;
       grpNTDPrev  += (pPrev!==undefined ? ntdP : ntd);
 
-      // 單位變化（保留原色）
-      const uDiff = u - uPrev;
-      let uCol='#888', uArr='';
-      if(uDiff > 0.0001){ uCol='#5b9bd5'; uArr=' ▲'; }
-      else if(uDiff < -0.0001){ uCol='#e07070'; uArr=' ▼'; }
+      if(_detailMode){
+        // 單位變化（保留原色）
+        const uDiff = u - uPrev;
+        let uCol='#888', uArr='';
+        if(uDiff > 0.0001){ uCol='#5b9bd5'; uArr=' ▲'; }
+        else if(uDiff < -0.0001){ uCol='#e07070'; uArr=' ▼'; }
 
-      // 價格箭頭、價值箭頭
-      const pArrow    = pPrev!==undefined ? diffArrow(p, pPrev, v=>v.toFixed(4)) : '';
-      const dispArrow = diffArrow(disp, dispP, v=>Math.round(v).toLocaleString()) + diffArrowPct(disp, dispP);
+        // 價格箭頭、價值箭頭
+        const pArrow    = pPrev!==undefined ? diffArrow(p, pPrev, v=>v.toFixed(4)) : '';
+        const dispArrow = diffArrow(disp, dispP, v=>Math.round(v).toLocaleString()) + diffArrowPct(disp, dispP);
 
-      const pSym  = isUSD ? 'US$' : t3IsJPY(f) ? '¥' : 'NT$';
-      const dotCol= T3_COLORS[ri % T3_COLORS.length];
-      html += `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:4px;margin-bottom:2px;">
-        <span style="width:8px;height:8px;border-radius:2px;background:${dotCol};display:inline-block;"></span>
-        <span style="font-size:11px;color:#555;">${fLabel} <span style="font-size:10px;color:#bbb;">(${isUSD?'USD':isJPY?'JPY':'NTD'})</span></span>
-        <span style="font-size:11px;color:#1a1a1a;font-weight:500;">${sym}${t3FmtN(disp)}${dispArrow}</span>
-      </div>
-      <div style="font-size:10px;margin-bottom:4px;padding-left:12px;">
-        <span style="color:${uCol};font-weight:500;">${t3FmtU(u)} 單位${uArr}</span>
-        <span style="color:#bbb;"> × ${pSym}${p.toFixed(4)}${pArrow}</span>
-      </div>`;
-      textLines.push(`  ${fLabel}: ${t3FmtU(u)}${uArr} × ${pSym}${p.toFixed(4)} = ${sym}${t3FmtN(disp)}`);
-      ri++;
+        const pSym  = isUSD ? 'US$' : t3IsJPY(f) ? '¥' : 'NT$';
+        const dotCol= T3_COLORS[ri % T3_COLORS.length];
+        html += `<div style="display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:4px;margin-bottom:2px;">
+          <span style="width:8px;height:8px;border-radius:2px;background:${dotCol};display:inline-block;"></span>
+          <span style="font-size:11px;color:#555;">${fLabel} <span style="font-size:10px;color:#bbb;">(${isUSD?'USD':isJPY?'JPY':'NTD'})</span></span>
+          <span style="font-size:11px;color:#1a1a1a;font-weight:500;">${sym}${t3FmtN(disp)}${dispArrow}</span>
+        </div>
+        <div style="font-size:10px;margin-bottom:4px;padding-left:12px;">
+          <span style="color:${uCol};font-weight:500;">${t3FmtU(u)} 單位${uArr}</span>
+          <span style="color:#bbb;"> × ${pSym}${p.toFixed(4)}${pArrow}</span>
+        </div>`;
+        textLines.push(`  ${fLabel}: ${t3FmtU(u)}${uArr} × ${pSym}${p.toFixed(4)} = ${sym}${t3FmtN(disp)}`);
+        ri++;
+      }
     }
 
     const grpDisp     = state.t3_ccy==='NTD' ? grpNTD     : state.t3_ccy==='JPY' ? grpNTD/t3GetJPYFX(date) : grpNTD/fx;
@@ -4544,7 +4561,15 @@ function t3ShowTip(ctx, dates, seriesList){
     const grpArrow    = diffArrow(grpDisp, grpDispPrev, v=>Math.round(v).toLocaleString()) + diffArrowPct(grpDisp, grpDispPrev);
     grandTotNTD     += grpNTD;
     grandTotNTDPrev += grpNTDPrev;
-    html += `<div style="text-align:right;font-size:12px;font-weight:500;color:${sr.color};margin-bottom:4px;">${sr.key} 小計：${sym}${t3FmtN(grpDisp)}${grpArrow}</div>`;
+    if(_detailMode){
+      html += `<div style="text-align:right;font-size:12px;font-weight:500;color:${sr.color};margin-bottom:4px;">${sr.key} 小計：${sym}${t3FmtN(grpDisp)}${grpArrow}</div>`;
+    } else {
+      // 彙總模式：小計顯示在組合標題同行（覆蓋原本空的標題）
+      html += `<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:${sr.color};margin-bottom:4px;padding-left:14px;">
+        <span style="color:#888;font-weight:400;">合計</span>
+        <span>${sym}${t3FmtN(grpDisp)}${grpArrow}</span>
+      </div>`;
+    }
     textLines.push(`  小計：${sym}${t3FmtN(grpDisp)}`);
 
     // ── 現金配息區塊 ──
@@ -4618,6 +4643,23 @@ function t3ShowTip(ctx, dates, seriesList){
   let lft = ctx.tooltip.caretX + 14; if(lft+bw > cw) lft = ctx.tooltip.caretX - bw - 10;
   let top = ctx.tooltip.caretY - 20; if(top+bh > ch) top = ch-bh-8; if(top<0) top=4;
   box.style.left = lft+'px'; box.style.top = top+'px';
+}
+
+function t3SetTipMode(mode){
+  state.t3_tipMode = mode;
+  localStorage.setItem('t3_tipMode', mode);
+  // 重新渲染 Tooltip（若目前有鎖定狀態，暫時解鎖重繪）
+  const wasLocked = state.t3_tipLocked;
+  state.t3_tipLocked = false;
+  state.t3_showTip = true;
+  if(state.t3_chart){
+    // 用目前 chart 最後一次 tooltip 的 context 重繪
+    if(state.t3_lastTipCtx){
+      t3ShowTip(state.t3_lastTipCtx, state.t3_curDates, state.t3_curSeries);
+    }
+  }
+  state.t3_showTip = false;
+  state.t3_tipLocked = true;
 }
 
 function t3CopyTip(){
@@ -5918,7 +5960,18 @@ function t5ShowTip(ctx, dates, datasets){
   // 判斷是否點到標記點
   const hitMarker = dps.find(dp=>{ const d=datasets[dp.datasetIndex]; return d&&d.isMarker&&dp.raw!==null&&dp.raw!==undefined; });
 
-  let html = `<div style="font-weight:500;font-size:13px;color:#1a1a1a;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">${date}</div>`;
+  // ── 模式切換按鈕 ──
+  const _btnBase = 'font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;border:1px solid #e2e8f0;';
+  const _btnOn   = _btnBase + 'background:#3b82f6;color:#fff;font-weight:600;';
+  const _btnOff  = _btnBase + 'background:#f8fafc;color:#64748b;';
+  const _isDetail = state.t3_tipMode === 'detail';
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;border-bottom:1px solid #eee;padding-bottom:4px;">
+    <span style="font-weight:500;font-size:13px;color:#1a1a1a;">${date}</span>
+    <div style="display:flex;gap:3px;">
+      <button style="${_isDetail?_btnOn:_btnOff}" onclick="t3SetTipMode('detail')">明細</button>
+      <button style="${!_isDetail?_btnOn:_btnOff}" onclick="t3SetTipMode('group')">彙總</button>
+    </div>
+  </div>`;
 
   if(hitMarker){
     // ── 標記點 tooltip：顯示投入明細 ──
@@ -6290,7 +6343,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.69
+// Fund Portfolio Dashboard — 整合版 V2.70
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
