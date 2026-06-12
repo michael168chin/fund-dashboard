@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.70 (整合版)
+     版本：V2.71 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1169,10 +1169,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.70  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.71  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.70 (整合版)';
+const APP_VERSION = 'V2.71 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1329,6 +1329,7 @@ let state = {
   t5_fxMode: 'orig',
   t5_inclDiv: false,
   t5_inclDivMap: {},    // 個別標的配息計入 { fund: true/false }，預設不計入
+  t5_showCostLine: {},  // 個別標的顯示平均成本線 { 'gi:fund': true/false }，預設不顯示
   t5_showFundName: true,
   t5_dateLocked: false,
   t5_tipLocked: false,
@@ -2824,6 +2825,11 @@ function t4SetInclDivFund(gi, fund, checked, ratio){
   t4GroupMsRenderList(gi);
   if(state.t4_loaded) t4Redraw();
 }
+function t5SetShowCostLine(gi, fund, show){
+  state.t5_showCostLine[gi+':'+fund] = show;
+  if(state.t5_loaded) t5Redraw();
+}
+
 function t5SetInclDivFund(gi, fund, checked, ratio){
   const pct = checked ? (parseFloat(ratio)||100) : 0;
   state.t5_inclDivMap[gi+':'+fund] = pct;
@@ -5153,6 +5159,12 @@ function t5GroupMsRenderList(gi, filter=''){
         style="width:32px;height:18px;font-size:9px;padding:1px 2px;border:1px solid #d1fae5;border-radius:4px;text-align:right;background:#f0fdf4;box-sizing:border-box;"
         title="回購比例(0~100%)" onclick="event.stopPropagation();"
         oninput="t5DivRatioInput(${gi},'${sv5}',this)">
+      <label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();" title="顯示平均成本走勢線">
+        <input type="checkbox" ${state.t5_showCostLine[gi+':'+v]?'checked':''}
+          onchange="t5SetShowCostLine(${gi},'${sv5}',this.checked)" onclick="event.stopPropagation();"
+          style="width:11px;height:11px;accent-color:#8b5cf6;cursor:pointer;">
+        <span style="font-size:9px;color:#5b21b6;font-weight:700;">成本</span>
+      </label>
     </div>`;
   }).join('');
 }
@@ -5719,7 +5731,84 @@ function t5CalcGroupSeries(gi, allDates){
     return parseFloat(val.toFixed(2));
   });
 
-  return { vals, totalInvested, investLog };
+  // ── 計算各標的逐日平均成本序列（用於平均成本線）──
+  // 每個標的各自追蹤：cumInvested（累計投入）、cumUnits（累計單位數）
+  const fundCumInvested = sel.map(()=>0);
+  const fundCumUnits    = sel.map(()=>0);
+  const fundCostSeries  = sel.map(()=>allDates.map(()=>null));
+
+  // 重新跑一次投入流程，計算各標的平均成本
+  const holdUnits2 = sel.map(()=>0);
+  const fundNavs2  = sel.map(fund=>{
+    const useFX = state.t5_fxMode==='fx';
+    const isUSD = fund.toUpperCase().startsWith('USD');
+    const _r    = state.t5_inclDivMap[gi+':'+fund] || 0;
+    const um    = _r > 0 ? t4CalcReinvestUnits(fund, allDates, _r) : null;
+    return allDates.map((date,i)=>{
+      const row=state.t3_pRows.find(r=>r.date===date);
+      if(!row||row[fund]===undefined) return null;
+      let nav=row[fund];
+      if(useFX){ if(isUSD) nav*=t3GetFX(date); else if(t3IsJPY(fund)) nav*=t3GetJPYFX(date); }
+      if(um) nav *= um[i];
+      return nav;
+    });
+  });
+
+  let lastInvestNavs2 = null;
+  let prevDayNavs2    = null;
+
+  allDates.forEach((date,di)=>{
+    const navs2 = fundNavs2.map(ns=>ns[di]);
+    if(navs2.some(n=>n===null||n===undefined)){ prevDayNavs2=null; return; }
+
+    let investAmt2 = 0;
+    if(investDates.has(date)){
+      const inv = s.oneoffs.find(o=>o.date===date);
+      if(inv){ investAmt2 = inv.amount; }
+      else if(s.enabled){
+        let amt = s.amount;
+        if(s.ddEnabled && lastInvestNavs2 !== null && prevDayNavs2 !== null){
+          let wRet=0, vW=0;
+          sel.forEach((f,i)=>{
+            const bNav=lastInvestNavs2[i], cNav=prevDayNavs2[i];
+            if(bNav&&bNav>0&&cNav!==null){ wRet+=((cNav-bNav)/bNav)*normW[i]; vW+=normW[i]; }
+          });
+          if(vW>0) wRet=wRet/vW;
+          const ddP=-wRet*100;
+          if(ddP>=s.ddThreshold) amt=parseFloat((s.amount*s.ddMult).toFixed(2));
+        }
+        investAmt2 = amt;
+      }
+    }
+
+    if(investAmt2 > 0){
+      sel.forEach((f,i)=>{
+        const nav=navs2[i];
+        if(nav&&nav>0){
+          const units = (investAmt2 * normW[i]) / nav;
+          fundCumInvested[i] += investAmt2 * normW[i];
+          fundCumUnits[i]    += units;
+          holdUnits2[i]      += units;
+        }
+      });
+      lastInvestNavs2 = [...navs2];
+    }
+    if(lastInvestNavs2===null && navs2.every(n=>n!==null&&n!==undefined))
+      lastInvestNavs2 = [...navs2];
+
+    // 計算各標的當日平均成本，並轉為相對值（成本=100）
+    sel.forEach((f,i)=>{
+      if(fundCumUnits[i] > 0){
+        const avgCost = fundCumInvested[i] / fundCumUnits[i];
+        const nav     = navs2[i];
+        // 相對值 = 當日淨值 / 平均成本 × 100
+        fundCostSeries[i][di] = parseFloat((nav / avgCost * 100).toFixed(4));
+      }
+    });
+    prevDayNavs2 = [...navs2];
+  });
+
+  return { vals, totalInvested, investLog, fundCostSeries, fundNames: sel };
 }
 
 // ─── 主繪圖 ───────────────────────────────────────────────
@@ -5824,6 +5913,35 @@ function t5Redraw(){
           investLog: logs,
         });
       });
+
+      // ── 平均成本走勢線 ──
+      if(result && result.fundCostSeries){
+        result.fundNames.forEach((fund,fi)=>{
+          const costKey = gi+':'+fund;
+          if(!state.t5_showCostLine[costKey]) return;
+          const costData = result.fundCostSeries[fi];
+          const fundLabel = state.t5_showFundName ? t3FundLabel(fund,'t5') : fund;
+          const costLabel = `${T5_GROUP_NAMES[gi]}：${fundLabel} 成本線`;
+          datasets.push({
+            label: costLabel,
+            data: costData,
+            spanGaps: false,
+            borderColor: T5_GROUP_COLORS[gi],
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [5,3],
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            fill: false,
+            tension: 0.1,
+            yAxisID: 'yRight',
+            groupIdx: gi,
+            isCostLine: true,
+            fundName: fund,
+            hidden: state.t5_visMap[costLabel]===false,
+          });
+        });
+      }
     }
   });
 
@@ -5835,8 +5953,11 @@ function t5Redraw(){
   // 判斷是否有任何成份線可見（決定右軸是否顯示）
   // 右軸顯示條件：有成份線可見（排除組合線和標記點）
   const anyFundVisible = datasets.some(d=>
-    !d.isGroup && !d.isMarker && state.t5_visMap[d.label]!==false
+    (!d.isGroup && !d.isMarker && state.t5_visMap[d.label]!==false) ||
+    (d.isCostLine && state.t5_visMap[d.label]!==false)
   );
+  // 是否有成本線可見（需要畫成本=100基準線）
+  const anyCostLine = datasets.some(d=>d.isCostLine && state.t5_visMap[d.label]!==false);
 
   // X 軸 tick callback：一律顯示 YYYY/MM
   const xTickCb = function(val){
@@ -5844,14 +5965,82 @@ function t5Redraw(){
     return date;  // 顯示完整 YYYY/MM/DD
   };
 
+  // t5CostPlugin：需放在 Chart 建立的外層 plugins 陣列（Chart.js 4.x）
+  const _t5CostPluginObj = {
+    id: 't5CostPlugin',
+    afterDatasetsDraw(chart){
+      if(!anyCostLine) return;
+      const ctx2   = chart.ctx;
+      const yScale = chart.scales.yRight;
+      if(!yScale||!yScale.display) return;
+      const y100 = yScale.getPixelForValue(100);
+      const area = chart.chartArea;
+      // 成本基準水平線
+      ctx2.save();
+      ctx2.strokeStyle='rgba(139,92,246,0.4)';
+      ctx2.lineWidth=1;
+      ctx2.setLineDash([4,4]);
+      ctx2.beginPath();
+      ctx2.moveTo(area.left, y100);
+      ctx2.lineTo(area.right, y100);
+      ctx2.stroke();
+      ctx2.setLineDash([]);
+      ctx2.fillStyle='rgba(139,92,246,0.6)';
+      ctx2.font='10px sans-serif';
+      ctx2.textAlign='right';
+      ctx2.fillText('成本基準(100)', area.right-2, y100-3);
+      ctx2.restore();
+      // 損益平衡點標記
+      chart.data.datasets.forEach((ds)=>{
+        if(!ds.isCostLine) return;
+        if(state.t5_visMap[ds.label]===false) return;
+        const xScale = chart.scales.x;
+        for(let i=1;i<ds.data.length;i++){
+          const prev=ds.data[i-1], cur=ds.data[i];
+          if(prev===null||cur===null) continue;
+          if(!((prev<100&&cur>=100)||(prev>=100&&cur<100))) continue;
+          const xPx = xScale.getPixelForValue(i);
+          // 圓點
+          ctx2.save();
+          ctx2.fillStyle=ds.borderColor;
+          ctx2.beginPath();
+          ctx2.arc(xPx, y100, 5, 0, Math.PI*2);
+          ctx2.fill();
+          ctx2.strokeStyle='#fff';
+          ctx2.lineWidth=1.5;
+          ctx2.stroke();
+          // 標籤：日期 + 淨值 + 累計報酬率
+          const date = allDates[i];
+          const fund = ds.fundName||'';
+          const row  = state.t3_pRows.find(r=>r.date===date);
+          const nav  = row ? (row[fund]||0) : 0;
+          const retPct = (cur-100).toFixed(2);
+          const sign   = cur>=100 ? '+' : '';
+          const lbl = `${date} | 淨值:${nav.toFixed(4)} | ${sign}${retPct}%`;
+          ctx2.font='bold 10px sans-serif';
+          const tw  = ctx2.measureText(lbl).width;
+          const lx  = Math.min(xPx+8, area.right-tw-4);
+          const ly  = cur>=100 ? y100-10 : y100+18;
+          ctx2.fillStyle='rgba(255,255,255,0.88)';
+          ctx2.fillRect(lx-2, ly-11, tw+4, 14);
+          ctx2.fillStyle=ds.borderColor;
+          ctx2.fillText(lbl, lx, ly);
+          ctx2.restore();
+        }
+      });
+    }
+  };
+
   if(state.t5_chart) state.t5_chart.destroy();
   state.t5_chart = new Chart(document.getElementById('t5-chart'),{
     type:'line',
     data:{ labels:allDates.map((_,i)=>i), datasets },
+    plugins: [_t5CostPluginObj],
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
-      plugins:{ legend:{display:false},
+      plugins:{
+        legend:{display:false},
         tooltip:{
           enabled:false,
           external: ctx=>t5ShowTip(ctx,allDates,datasets),
@@ -6343,7 +6532,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.70
+// Fund Portfolio Dashboard — 整合版 V2.71
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
