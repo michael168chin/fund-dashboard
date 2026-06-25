@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ==========================================
-     系統版本：v1.8.0
+     系統版本：v1.8.1
      檔案名稱：allianz-fetcher.html
      ========================================== -->
 <html lang="zh-TW">
@@ -41,7 +41,7 @@
   <!-- ▼ 版次顯示列（頁面最頂端，方便辨識） -->
   <div class="w-full bg-blue-900 text-white px-4 py-1.5 flex items-center gap-3 text-xs font-bold tracking-widest mb-0">
     <span class="uppercase opacity-70">安聯人壽匯率/基金抓取系統</span>
-    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.8.0</span>
+    <span id="version-badge" class="bg-white text-blue-900 px-2 py-0.5 rounded-full border border-blue-300">v1.8.1</span>
   </div>
   <!-- ▲ 版次顯示列 -->
 
@@ -53,7 +53,7 @@
     // ==========================================
     // ⚠️ 系統版本號
     // ==========================================
-    const APP_VERSION = 'v1.8.0';
+    const APP_VERSION = 'v1.8.1';
 
     // ==========================================
     // ⚠️ 您的 GAS 網頁應用程式網址
@@ -533,12 +533,19 @@
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em] mb-2 font-mono">TARGET IDENTIFIED</p>
                     <div className="inline-block bg-white px-10 md:px-16 py-6 rounded-[2.5rem] shadow-md border border-gray-100 ring-[12px] ring-blue-50/50">
                       {activeTab === 'twse-index' ? (
-                        <h2 className="text-2xl md:text-4xl font-black text-amber-700 tracking-tight leading-snug">
-                          {detectedTargetName || '未知指數'}
-                        </h2>
+                        <>
+                          <h2 className="text-2xl md:text-4xl font-black text-amber-700 tracking-tight leading-snug">
+                            {detectedTargetName || '未知指數'}
+                          </h2>
+                          {detectedTargetCode && (
+                            <p className="text-sm font-bold text-amber-500 mt-1 font-mono tracking-widest">
+                              {detectedTargetCode}
+                            </p>
+                          )}
+                        </>
                       ) : (
                         <>
-                          {detectedTargetName && detectedTargetCode && (
+                          {detectedTargetName && (
                             <h3 className="text-lg md:text-xl font-bold text-gray-600 mb-1 leading-tight tracking-wide">
                               {detectedTargetName}
                             </h3>
@@ -546,6 +553,12 @@
                           <h2 className="text-4xl md:text-6xl font-black text-blue-900 tracking-tighter">
                             {detectedTargetCode || customTargetCode || detectedTargetName || '未知標的'}
                           </h2>
+                          {/* 有名稱也有代碼時，在代碼下方補充顯示名稱旁的代碼標籤 */}
+                          {detectedTargetName && detectedTargetCode && (
+                            <p className="text-xs font-bold text-blue-400 mt-1 font-mono tracking-widest">
+                              代碼：{detectedTargetCode}
+                            </p>
+                          )}
                         </>
                       )}
                     </div>
@@ -807,7 +820,7 @@
   </script>
 </body>
 <!-- ==========================================
-     系統版本：v1.8.0
+     系統版本：v1.8.1
      程式結束 / END OF FILE
      ========================================== -->
 </html>
