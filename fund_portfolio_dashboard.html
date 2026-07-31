@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.78 (整合版)
+     版本：V2.79 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1182,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.78  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.79  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.78 (整合版)';
+const APP_VERSION = 'V2.79 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3153,29 +3153,35 @@ function t4Redraw(){
           const hY    = yScale.getPixelForValue(w.high);
           const lY    = yScale.getPixelForValue(w.low);
           const bodyW = Math.max(4, xScale.width / ohlc.length * 0.5);
-          // 漲跌色（填色）
-          let fill = '#1d9e75';
-          if(w.close > w.open)        fill = '#e05252';
-          else if(w.close === w.open) fill = '#3b82f6';
-          // 組別顏色（影線和邊框）區分不同投資組合
-          const groupColor = color;
+          // 各組別專屬漲跌顏色
+          const T4_CANDLE_COLORS = [
+            {up:'#e05252',dn:'#1d9e75',flat:'#3b82f6'},
+            {up:'#f97316',dn:'#16a34a',flat:'#6366f1'},
+            {up:'#dc2626',dn:'#86efac',flat:'#0ea5e9'},
+            {up:'#fbbf24',dn:'#065f46',flat:'#8b5cf6'},
+          ];
+          const gi4  = ds.groupIdx ?? 0;
+          const cc   = T4_CANDLE_COLORS[gi4 % T4_CANDLE_COLORS.length];
+          let fill   = cc.dn;
+          if(w.close > w.open)        fill = cc.up;
+          else if(w.close === w.open) fill = cc.flat;
           ctx2.save();
-          // 影線：用組別顏色
-          ctx2.strokeStyle = groupColor;
-          ctx2.lineWidth   = 2;
+          // 影線：同填色
+          ctx2.strokeStyle = fill;
+          ctx2.lineWidth   = 1.5;
           ctx2.beginPath();
           ctx2.moveTo(xPx, hY);
           ctx2.lineTo(xPx, Math.min(oY,cY));
           ctx2.moveTo(xPx, Math.max(oY,cY));
           ctx2.lineTo(xPx, lY);
           ctx2.stroke();
-          // 實體：填色用漲跌色，邊框用組別顏色（較粗）
+          // 實體
           const bodyTop    = Math.min(oY,cY);
           const bodyHeight = Math.max(1, Math.abs(oY-cY));
           ctx2.fillStyle   = fill;
           ctx2.fillRect(xPx - bodyW/2, bodyTop, bodyW, bodyHeight);
-          ctx2.strokeStyle = groupColor;
-          ctx2.lineWidth   = 2;
+          ctx2.strokeStyle = fill;
+          ctx2.lineWidth   = 1;
           ctx2.strokeRect(xPx - bodyW/2, bodyTop, bodyW, bodyHeight);
           ctx2.restore();
         });
@@ -6777,7 +6783,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.78
+// Fund Portfolio Dashboard — 整合版 V2.79
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
