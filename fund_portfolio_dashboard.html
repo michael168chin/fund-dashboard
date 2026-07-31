@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.74 (整合版)
+     版本：V2.75 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -495,6 +495,14 @@
           <div class="bg-slate-50 rounded-xl p-3 mb-3">
             <!-- 第一列：控制選項 -->
             <div class="flex flex-wrap gap-3 items-end mb-3">
+              <div class="flex flex-col gap-1.5">
+                <div class="text-xs text-slate-500">顯示方式</div>
+                <div class="flex gap-1">
+                  <button id="t4-btn-day"    onclick="t4SetViewMode('day')"         class="btn btn-primary text-xs">日線</button>
+                  <button id="t4-btn-week"   onclick="t4SetViewMode('week')"        class="btn text-xs">週折線</button>
+                  <button id="t4-btn-candle" onclick="t4SetViewMode('week_candle')" class="btn text-xs">週K線</button>
+                </div>
+              </div>
               <div class="flex flex-col gap-1.5">
                 <div class="text-xs text-slate-500">匯率模式</div>
                 <div class="flex gap-1">
@@ -1174,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.74  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.75  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.74 (整合版)';
+const APP_VERSION = 'V2.75 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1317,6 +1325,7 @@ let state = {
   // Tab4
   t4_loaded: false,
   t4_fxMode: 'orig',
+  t4_viewMode: 'day',   // Tab4 顯示模式：'day'=日線, 'week'=週折線, 'week_candle'=週K線
   t4_yMode: 'pct',   // Tab4 Y 軸模式：'pct'=相對% / 'price'=原始價格
   t4_dateLocked: false,
   t4_tipLocked: false,
@@ -2628,6 +2637,14 @@ function t4SetYMode(mode){
   if(state.t4_loaded) t4Redraw();
 }
 
+function t4SetViewMode(mode){
+  state.t4_viewMode = mode;
+  document.getElementById('t4-btn-day').className    = mode==='day'         ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-week').className   = mode==='week'        ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t4-btn-candle').className = mode==='week_candle' ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t4_loaded) t4Redraw();
+}
+
 function t4SetFxMode(mode){
   state.t4_fxMode = mode;
   document.getElementById('t4-btn-orig').className = mode==='orig'?'btn btn-primary text-xs':'btn text-xs';
@@ -2939,6 +2956,8 @@ function t4Redraw(){
   const de = document.getElementById('t4-date-end').value;
   const allDates = state.t3_pRows.map(r=>r.date).filter(d=>(!ds||d>=ds)&&(!de||d<=de));
   if(!allDates.length){ t4SetStatus('所選時間範圍內無淨值資料',true); return; }
+  const t4IsWeek   = state.t4_viewMode === 'week' || state.t4_viewMode === 'week_candle';
+  const t4IsCandle = state.t4_viewMode === 'week_candle';
 
   // 虛線樣式：每個成份標的用不同的虛線格式
   const DASH_PATTERNS = [
@@ -3085,15 +3104,81 @@ function t4Redraw(){
   t4RenderLegend(datasets);
   t4InitSlider(allDates);
 
+  // ── 週模式：把各組的 series 轉成週 OHLC ──
+  if(t4IsWeek){
+    datasets.forEach(ds=>{
+      if(ds.isGroup && !ds.isMarker){
+        const wd = t3CalcWeeklyData(allDates, ds.data);
+        ds._ohlc = wd;
+        ds.data  = wd.map(w=>w.close);
+      } else if(!ds.isGroup && !ds.isMarker){
+        const wd = t3CalcWeeklyData(allDates, ds.data);
+        ds._ohlc = wd;
+        ds.data  = wd.map(w=>w.close);
+      }
+    });
+  }
+  const t4WeekKeys  = t4IsWeek ? t3CalcWeeklyData(allDates,
+    datasets.find(d=>d.isGroup&&!d.isMarker)?.data||[]
+  ).map(w=>w.wk) : allDates;
+  const t4DisplayLen = t4IsWeek ? t4WeekKeys.length : allDates.length;
+
   if(state.t4_chart) state.t4_chart.destroy();
   const t4XTickCb = function(val){
-    const date = allDates[val]; if(!date) return '';
-    return date;  // 顯示 YYYY/MM/DD（即原始格式）
+    const arr  = t4IsWeek ? t4WeekKeys : allDates;
+    const date = arr[val]; if(!date) return '';
+    return date;
+  };
+
+  // K線 plugin for Tab4
+  const _t4CandlePlugin = {
+    id: 't4CandlePlugin',
+    afterDatasetsDraw(chart){
+      if(!t4IsCandle) return;
+      const ctx2   = chart.ctx;
+      const xScale = chart.scales.x;
+      const yScale = chart.scales.y;
+      if(!xScale||!yScale) return;
+      chart.data.datasets.forEach((ds,dsi)=>{
+        if(!ds.isGroup||ds.isMarker) return;
+        if(!chart.isDatasetVisible(dsi)) return;
+        const ohlc = ds._ohlc; if(!ohlc) return;
+        const color = ds.borderColor;
+        ohlc.forEach((w,wi)=>{
+          const xPx   = xScale.getPixelForValue(wi);
+          const oY    = yScale.getPixelForValue(w.open);
+          const cY    = yScale.getPixelForValue(w.close);
+          const hY    = yScale.getPixelForValue(w.high);
+          const lY    = yScale.getPixelForValue(w.low);
+          const bodyW = Math.max(4, xScale.width / ohlc.length * 0.5);
+          let fill = '#1d9e75';
+          if(w.close > w.open)        fill = '#e05252';
+          else if(w.close === w.open) fill = '#3b82f6';
+          ctx2.save();
+          ctx2.strokeStyle = fill;
+          ctx2.lineWidth   = 1.5;
+          ctx2.beginPath();
+          ctx2.moveTo(xPx, hY);
+          ctx2.lineTo(xPx, Math.min(oY,cY));
+          ctx2.moveTo(xPx, Math.max(oY,cY));
+          ctx2.lineTo(xPx, lY);
+          ctx2.stroke();
+          const bodyTop    = Math.min(oY,cY);
+          const bodyHeight = Math.max(1, Math.abs(oY-cY));
+          ctx2.fillStyle   = fill;
+          ctx2.fillRect(xPx - bodyW/2, bodyTop, bodyW, bodyHeight);
+          ctx2.strokeStyle = fill; ctx2.lineWidth = 1;
+          ctx2.strokeRect(xPx - bodyW/2, bodyTop, bodyW, bodyHeight);
+          ctx2.restore();
+        });
+      });
+    }
   };
 
   state.t4_chart = new Chart(document.getElementById('t4-chart'),{
     type:'line',
-    data:{ labels:allDates.map((_,i)=>i), datasets },
+    plugins: [_t4CandlePlugin],
+    data:{ labels: t4IsWeek ? t4WeekKeys.map((_,i)=>i) : allDates.map((_,i)=>i), datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
@@ -4251,10 +4336,14 @@ function t3Redraw(){
   }));
 
   // 若分開模式超過1條，另加一條「合計」虛線（右軸，可隱藏）
-  if(state.t3_mode === 'split' && seriesList.length > 1 && state.t3_showTotal){
+  // 合計折線（右軸）：分開或合併模式都可顯示，由 t3_showTotal 控制
+  if(seriesList.length > 1 && state.t3_showTotal){
+    const totalData = isWeek
+      ? t3CalcWeeklyData(dates, totalVals).map(w=>w.close)
+      : totalVals;
     datasets.push({
       label: '合計（右軸）',
-      data: totalVals,
+      data: totalData,
       borderColor: '#444',
       backgroundColor: 'transparent',
       borderWidth: 2,
@@ -4504,7 +4593,7 @@ function t3Redraw(){
         },
         yRight:{
           position:'right',
-          display: state.t3_mode==='split' && seriesList.length>1 && state.t3_showTotal,
+          display: seriesList.length>1 && state.t3_showTotal,
           min: (() => { const m=parseFloat(state.t3AxisRange.y2Min); return isNaN(m)?undefined:m; })(),
           max: (() => { const m=parseFloat(state.t3AxisRange.y2Max); return isNaN(m)?undefined:m; })(),
           ticks:{ font:{size:11}, color:'#666', callback:v=>t3FmtAxis(v) },
@@ -6680,7 +6769,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.74
+// Fund Portfolio Dashboard — 整合版 V2.75
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
