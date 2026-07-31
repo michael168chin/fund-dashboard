@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.73 (整合版)
+     版本：V2.74 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1174,10 +1174,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.73  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.74  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.73 (整合版)';
+const APP_VERSION = 'V2.74 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -4150,9 +4150,9 @@ function t3Redraw(){
   t3InitSlider(dates, firstTxDate);
   t3BindCrosshair();
   // 每次 Redraw 都更新最新資料（供 click handler 取用）
-  state.t3_curDates  = isWeek ? weekDates : dates;  // 週模式用週的收盤日期
+  // isWeek/weekDates 在下方 datasets 區段已計算，這裡用 state 記錄
+  state.t3_curDates  = state.t3_isWeek ? (state.t3_weekDates||dates) : dates;
   state.t3_curSeries = seriesList;
-  state.t3_isWeek    = isWeek;
 
   // 計算左軸 tickStep 並顯示 ▲▼ 按鈕
   setTimeout(()=>{
@@ -4214,7 +4214,9 @@ function t3Redraw(){
   // ── 計算合計的週資料 ──
   const weeklyTotal = isWeek ? t3CalcWeeklyData(dates, totalVals) : null;
   const weekDates   = weeklyTotal ? weeklyTotal.map(w=>w.label) : dates;
-  const weekLabels  = weeklyTotal ? weeklyTotal.map(w=>w.wk)   : dates;
+  const weekLabels  = weeklyTotal ? weeklyTotal.map(w=>w.wk)    : dates;
+  state.t3_isWeek   = isWeek;
+  state.t3_weekDates = weekDates;
 
   // ── 各組週資料 ──
   const seriesWeekly = isWeek ? seriesList.map(sr=>t3CalcWeeklyData(dates, sr.vals)) : null;
@@ -6678,7 +6680,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.73
+// Fund Portfolio Dashboard — 整合版 V2.74
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
