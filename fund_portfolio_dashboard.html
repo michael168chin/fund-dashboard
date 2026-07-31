@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.72 (整合版)
+     版本：V2.73 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -435,6 +435,11 @@
               </div>
             </div>
             <div class="flex gap-2 ml-auto items-center flex-wrap">
+              <span style="font-size:11px;color:#94a3b8;margin-right:2px;">顯示</span>
+              <button id="t3-btn-day"    onclick="t3SetViewMode('day')"          class="btn btn-primary text-xs">日線</button>
+              <button id="t3-btn-week"   onclick="t3SetViewMode('week')"         class="btn text-xs">週折線</button>
+              <button id="t3-btn-candle" onclick="t3SetViewMode('week_candle')"  class="btn text-xs">週K線</button>
+              <span style="width:1px;height:16px;background:#e2e8f0;margin:0 4px;"></span>
               <button id="t3-btn-ntd" onclick="t3SetCcy('NTD')" class="btn btn-primary text-xs">新台幣</button>
               <button id="t3-btn-usd" onclick="t3SetCcy('USD')" class="btn text-xs">美元</button>
               <button id="t3-btn-jpy" onclick="t3SetCcy('JPY')" class="btn text-xs">日圓</button>
@@ -1169,10 +1174,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.72  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.73  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.72 (整合版)';
+const APP_VERSION = 'V2.73 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1303,6 +1308,7 @@ let state = {
   t3_lineWidth: 1.5,        // Tab3 組合線粗細（預設1.5）
   t3_yTickStep: 0,          // Tab3 左軸刻度間距（由圖表自動計算）
   t3_yMinShift: 0,          // Tab3 左軸最小值偏移量（tickStep 的倍數）
+  t3_viewMode: 'day',       // Tab3 顯示模式：'day'=日線, 'week'=週折線, 'week_candle'=週K線
   t3_pointSize: 1,          // Tab3 折線圖示大小（預設1）
   t3_showDivCurve: false,   // 顯示累積配息曲線（預設不顯示）
   t3_showCrosshair: false,  // 十字虛線（預設隱藏）
@@ -3516,6 +3522,45 @@ document.getElementById('t4-date-end').onchange   = ()=>t4Redraw();
 function t3IsUSD(fund){ return fund && fund.toUpperCase().startsWith('USD'); }
 function t3IsJPY(fund){ return fund && fund.toUpperCase().startsWith('JPY'); }
 
+// ── 取得日期所在的週的 key（YYYY-Www）──
+function t3GetWeekKey(dateStr){
+  const d = new Date(dateStr);
+  const day = d.getDay(); // 0=日 1=月...6=六
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - (day===0 ? 6 : day-1)); // 調到週一
+  return mon.toISOString().slice(0,10); // 週一日期作為 key
+}
+
+// ── 把日線 vals 轉成週資料（OHLC 或只取收盤）──
+function t3CalcWeeklyData(dates, vals){
+  // 補值：前向填充（無資料日延用前一日）
+  const filled = [...vals];
+  for(let i=1;i<filled.length;i++){
+    if(filled[i]===null||filled[i]===undefined) filled[i]=filled[i-1];
+  }
+
+  // 按週分組
+  const weekMap = new Map(); // weekKey → { open, high, low, close, label }
+  dates.forEach((date,di)=>{
+    const v = filled[di];
+    if(v===null||v===undefined) return;
+    const wk = t3GetWeekKey(date);
+    if(!weekMap.has(wk)){
+      weekMap.set(wk, { open:v, high:v, low:v, close:v, label:date });
+    } else {
+      const w = weekMap.get(wk);
+      if(v > w.high) w.high = v;
+      if(v < w.low)  w.low  = v;
+      w.close = v;      // 最後一天為收盤
+      w.label = date;   // 最後一天日期
+    }
+  });
+
+  // 轉成陣列（依週順序）
+  const weeks = [...weekMap.keys()].sort();
+  return weeks.map(wk=>({ wk, ...weekMap.get(wk) }));
+}
+
 function t3GetFX(date){
   if(state.t3_fxMap[date]) return state.t3_fxMap[date];
   const keys = Object.keys(state.t3_fxMap).sort();
@@ -4105,8 +4150,9 @@ function t3Redraw(){
   t3InitSlider(dates, firstTxDate);
   t3BindCrosshair();
   // 每次 Redraw 都更新最新資料（供 click handler 取用）
-  state.t3_curDates  = dates;
+  state.t3_curDates  = isWeek ? weekDates : dates;  // 週模式用週的收盤日期
   state.t3_curSeries = seriesList;
+  state.t3_isWeek    = isWeek;
 
   // 計算左軸 tickStep 並顯示 ▲▼ 按鈕
   setTimeout(()=>{
@@ -4162,7 +4208,34 @@ function t3Redraw(){
 
   const t3lw = state.t3_lineWidth || 2;
   const t3ps = state.t3_pointSize || 2;
-  const datasets = seriesList.map((sr,i)=>({
+  const isWeek   = state.t3_viewMode === 'week' || state.t3_viewMode === 'week_candle';
+  const isCandle = state.t3_viewMode === 'week_candle';
+
+  // ── 計算合計的週資料 ──
+  const weeklyTotal = isWeek ? t3CalcWeeklyData(dates, totalVals) : null;
+  const weekDates   = weeklyTotal ? weeklyTotal.map(w=>w.label) : dates;
+  const weekLabels  = weeklyTotal ? weeklyTotal.map(w=>w.wk)   : dates;
+
+  // ── 各組週資料 ──
+  const seriesWeekly = isWeek ? seriesList.map(sr=>t3CalcWeeklyData(dates, sr.vals)) : null;
+
+  // ── 建立 datasets ──
+  const datasets = isWeek ? seriesList.map((sr,i)=>{
+    const wd = seriesWeekly[i];
+    return {
+      label: sr.key,
+      data: wd.map(w=>w.close),   // 折線用收盤
+      _ohlc: wd,                   // K線用 OHLC（自訂屬性）
+      borderColor: sr.color,
+      backgroundColor: FILL_COLORS[i % FILL_COLORS.length],
+      borderWidth: t3lw,
+      pointRadius: isCandle ? 0 : t3ps,
+      pointHoverRadius: isCandle ? 0 : Math.max(t3ps+3, 6),
+      fill: seriesList.length === 1 && !isCandle,
+      tension: isCandle ? 0 : 0.3,
+      hidden: state.t3VisMap[sr.key] === false,
+    };
+  }) : seriesList.map((sr,i)=>({
     label: sr.key,
     data: sr.vals,
     borderColor: sr.color,
@@ -4272,8 +4345,9 @@ function t3Redraw(){
 
   if(state.t3_chart) state.t3_chart.destroy();
   const t3XTickCb = function(val){
-    const date = dates[val]; if(!date) return '';
-    return date;  // 顯示 YYYY/MM/DD（即原始格式）
+    const arr  = isWeek ? weekLabels : dates;
+    const date = arr[val]; if(!date) return '';
+    return date;
   };
 
   // 金幣 plugin：用 closure + chartArea.bottom 作基線，確保在可見範圍內
@@ -4318,10 +4392,59 @@ function t3Redraw(){
     }
   };
 
+  // K線 plugin（週K線模式才繪製）
+  const _t3CandlePlugin = {
+    id: 't3CandlePlugin',
+    afterDatasetsDraw(chart){
+      if(!isCandle) return;
+      const ctx2 = chart.ctx;
+      const xScale = chart.scales.x;
+      const yScale = chart.scales.y;
+      if(!xScale||!yScale) return;
+      chart.data.datasets.forEach((ds, dsi)=>{
+        if(!chart.isDatasetVisible(dsi)) return;
+        const ohlc = ds._ohlc;
+        if(!ohlc) return;
+        const color = ds.borderColor;
+        ohlc.forEach((w, wi)=>{
+          const xPx   = xScale.getPixelForValue(wi);
+          const oY    = yScale.getPixelForValue(w.open);
+          const cY    = yScale.getPixelForValue(w.close);
+          const hY    = yScale.getPixelForValue(w.high);
+          const lY    = yScale.getPixelForValue(w.low);
+          const bodyW = Math.max(4, xScale.width / ohlc.length * 0.5);
+          // 顏色判斷
+          let fill = '#1d9e75'; // 綠（下跌）
+          if(w.close > w.open)       fill = '#e05252'; // 紅（上漲）
+          else if(w.close === w.open) fill = '#3b82f6'; // 藍（持平）
+          // 上下影線
+          ctx2.save();
+          ctx2.strokeStyle = fill;
+          ctx2.lineWidth   = 1.5;
+          ctx2.beginPath();
+          ctx2.moveTo(xPx, hY);
+          ctx2.lineTo(xPx, Math.min(oY, cY));
+          ctx2.moveTo(xPx, Math.max(oY, cY));
+          ctx2.lineTo(xPx, lY);
+          ctx2.stroke();
+          // 實體
+          const bodyTop    = Math.min(oY, cY);
+          const bodyHeight = Math.max(1, Math.abs(oY - cY));
+          ctx2.fillStyle   = fill;
+          ctx2.fillRect(xPx - bodyW/2, bodyTop, bodyW, bodyHeight);
+          ctx2.strokeStyle = fill;
+          ctx2.lineWidth   = 1;
+          ctx2.strokeRect(xPx - bodyW/2, bodyTop, bodyW, bodyHeight);
+          ctx2.restore();
+        });
+      });
+    }
+  };
+
   state.t3_chart = new Chart(document.getElementById('t3-chart'), {
     type: 'line',
-    data: { labels: dates.map((_,i)=>i), datasets },
-    plugins: [_t3CoinPlugin],
+    data: { labels: isWeek ? weekLabels.map((_,i)=>i) : dates.map((_,i)=>i), datasets },
+    plugins: [_t3CoinPlugin, _t3CandlePlugin],
     options:{
       responsive: true, maintainAspectRatio: false,
       interaction:{ mode:'index', intersect:false },
@@ -4980,6 +5103,14 @@ function t3SetShowTotal(val){
   document.getElementById('t3-btn-total-show').className = val ? 'btn btn-primary text-xs' : 'btn text-xs';
   document.getElementById('t3-btn-total-hide').className = !val ? 'btn btn-primary text-xs' : 'btn text-xs';
   t3Redraw();
+}
+
+function t3SetViewMode(mode){
+  state.t3_viewMode = mode;
+  document.getElementById('t3-btn-day').className    = mode==='day'          ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-week').className   = mode==='week'         ? 'btn btn-primary text-xs' : 'btn text-xs';
+  document.getElementById('t3-btn-candle').className = mode==='week_candle'  ? 'btn btn-primary text-xs' : 'btn text-xs';
+  if(state.t3_loaded) t3Redraw();
 }
 
 function t3SetCcy(c){
@@ -6547,7 +6678,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.72
+// Fund Portfolio Dashboard — 整合版 V2.73
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
