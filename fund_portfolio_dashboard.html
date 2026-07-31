@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.75 (整合版)
+     版本：V2.76 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1182,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.75  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.76  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.75 (整合版)';
+const APP_VERSION = 'V2.76 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3118,9 +3118,10 @@ function t4Redraw(){
       }
     });
   }
-  const t4WeekKeys  = t4IsWeek ? t3CalcWeeklyData(allDates,
-    datasets.find(d=>d.isGroup&&!d.isMarker)?.data||[]
-  ).map(w=>w.wk) : allDates;
+  // t4WeekKeys：直接從 allDates 計算週 key，不依賴 datasets（避免已轉換問題）
+  const _t4DummyVals = allDates.map(()=>1);  // 只需長度，值不重要
+  const _t4WeeklyDummy = t4IsWeek ? t3CalcWeeklyData(allDates, _t4DummyVals) : null;
+  const t4WeekKeys   = _t4WeeklyDummy ? _t4WeeklyDummy.map(w=>w.wk) : allDates;
   const t4DisplayLen = t4IsWeek ? t4WeekKeys.length : allDates.length;
 
   if(state.t4_chart) state.t4_chart.destroy();
@@ -3140,7 +3141,8 @@ function t4Redraw(){
       const yScale = chart.scales.y;
       if(!xScale||!yScale) return;
       chart.data.datasets.forEach((ds,dsi)=>{
-        if(!ds.isGroup||ds.isMarker) return;
+        if(ds.isMarker) return;
+        if(!ds._ohlc) return;   // 沒有 OHLC 資料就跳過
         if(!chart.isDatasetVisible(dsi)) return;
         const ohlc = ds._ohlc; if(!ohlc) return;
         const color = ds.borderColor;
@@ -6769,7 +6771,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.75
+// Fund Portfolio Dashboard — 整合版 V2.76
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
