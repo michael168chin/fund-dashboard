@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.80 (整合版)
+     版本：V2.81 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1182,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.80  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.81  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.80 (整合版)';
+const APP_VERSION = 'V2.81 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -1326,6 +1326,7 @@ let state = {
   t4_loaded: false,
   t4_fxMode: 'orig',
   t4_viewMode: 'day',   // Tab4 顯示模式：'day'=日線, 'week'=週折線, 'week_candle'=週K線
+  t4_colorMap: {},      // 個別標的折線顏色 { 'gi:fund': '#rrggbb' }
   t4_yMode: 'pct',   // Tab4 Y 軸模式：'pct'=相對% / 'price'=原始價格
   t4_dateLocked: false,
   t4_tipLocked: false,
@@ -2402,8 +2403,7 @@ function t4GroupMsRenderList(gi, filter=''){
       + ' placeholder="55"'
       + ' style="width:42px;height:20px;font-size:9px;padding:1px 3px;border:1px solid #fde68a;border-radius:4px;text-align:right;background:#fffbeb;box-sizing:border-box;"'
       + ' title="EMA天數" onclick="event.stopPropagation();"'
-      + ' oninput="t4SetEmaPeriod('+gi+',\''+sv+'\',this.value)">'
-      + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="配息再投資回購比例">'
+      + ' oninput="t4SetEmaPeriod('+gi+',\''+sv+'\',this.value)">'      + '<input type="color" value="'+(state.t4_colorMap[gi+':'+v]||T4_GROUP_COLORS[gi])+'"'      + ' title="折線顏色" onclick="event.stopPropagation();"'      + ' oninput="t4SetFundColor('+gi+',\''+sv+'\',this.value)"'      + ' style="width:22px;height:20px;padding:1px;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer;box-sizing:border-box;flex-shrink:0;">'      + '<input type="color" value="'+(state.t4_colorMap['ema:'+gi+':'+v]||T4_GROUP_COLORS[gi])+'"'      + ' title="EMA顏色" onclick="event.stopPropagation();"'      + ' oninput="t4SetEmaColor('+gi+',\''+sv+'\',this.value)"'      + ' style="width:22px;height:20px;padding:1px;border:1px solid #fde68a;border-radius:4px;cursor:pointer;box-sizing:border-box;flex-shrink:0;">'      + '<span style="font-size:8px;color:#aaa;line-height:1.2;flex-shrink:0;">線/EMA</span>'      + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="配息再投資回購比例">'
       + '<input type="checkbox" '+(inclD4>0?'checked':'')
       + ' onchange="t4DivChkChange('+gi+',\''+sv+'\',this)" onclick="event.stopPropagation();"'
       + ' style="width:11px;height:11px;accent-color:#10b981;cursor:pointer;">'
@@ -2861,6 +2861,15 @@ function t5SetInclDivFund(gi, fund, checked, ratio){
 }
 
 // ── 配息計入：組合層（該組已選標的）─────────────────────
+function t4SetFundColor(gi, fund, color){
+  state.t4_colorMap[gi+':'+fund] = color;
+  if(state.t4_loaded) t4Redraw();
+}
+function t4SetEmaColor(gi, fund, color){
+  state.t4_colorMap['ema:'+gi+':'+fund] = color;
+  if(state.t4_loaded) t4Redraw();
+}
+
 function t4GroupSetInclDiv(gi, val){
   const sel = [...t4Groups[gi].selected];
   const pct = val ? 100 : 0;
@@ -3033,19 +3042,28 @@ function t4Redraw(){
       if(baseIdx<0) return;
       const base = rawSeries[baseIdx];
       const isPriceModeEma = state.t4_yMode === 'price';
-      const idxSeries = rawSeries.map((v,i)=>{
+      const idxSeriesDay = rawSeries.map((v,i)=>{
         if(i<baseIdx||v===null) return null;
         return isPriceModeEma
           ? parseFloat(v.toFixed(4))
           : parseFloat(((v/base)*100).toFixed(4));
       });
-      const emaSeries = calcEMA(idxSeries, period);
+      // 週模式：對週收盤做 EMA；日模式：對日線做 EMA
+      let emaSeries;
+      if(t4IsWeek){
+        const weeklyRaw = t3CalcWeeklyData(allDates, idxSeriesDay);
+        const weeklyClose = weeklyRaw.map(w=>w.close);
+        emaSeries = calcEMA(weeklyClose, period);
+      } else {
+        emaSeries = calcEMA(idxSeriesDay, period);
+      }
       const emaLabel  = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]}：EMA${period}(${t3FundLabel(fund,'t4')})`;
       datasets.push({
         label: emaLabel, data: emaSeries, spanGaps: true,
-        borderColor: T4_GROUP_COLORS[gi],
+        borderColor: state.t4_colorMap['ema:'+gi+':'+fund] || T4_GROUP_COLORS[gi],
         backgroundColor: 'transparent',
         borderWidth: 1.8, borderDash: [4,2],
+        showLine: !t4IsCandle,
         pointRadius: 0, pointHoverRadius: 0,
         fill: false, tension: 0.2,
         groupIdx: gi, fundKey: fund, isEma: true,
@@ -3062,7 +3080,7 @@ function t4Redraw(){
         datasets.push({
           label: groupLabel,
           data: groupData, spanGaps: true,
-          borderColor: T4_GROUP_COLORS[gi],
+          borderColor: state.t4_colorMap[gi+':'+fund] || T4_GROUP_COLORS[gi],
           backgroundColor: 'transparent',
           borderWidth: t4IsCandle ? 0 : state.t4_comboWidth,  // K線模式隱藏折線
           showLine: !t4IsCandle,                               // K線模式不畫折線
@@ -3082,7 +3100,9 @@ function t4Redraw(){
         const grpEmaConf = state.t4_emaMap[grpEmaKey] || { show:false, period:55 };
         if(grpEmaConf.show){
           const grpEmaPeriod = grpEmaConf.period || 55;
-          const grpEmaSeries = calcEMA(groupData, grpEmaPeriod);
+          const grpEmaSeries = t4IsWeek
+          ? calcEMA(t3CalcWeeklyData(allDates, groupData).map(w=>w.close), grpEmaPeriod)
+          : calcEMA(groupData, grpEmaPeriod);
           const grpEmaLabel  = `${t4_groupCustomNames[gi]||T4_GROUP_NAMES[gi]} EMA${grpEmaPeriod}(組合)`;
           datasets.push({
             label: grpEmaLabel, data: grpEmaSeries, spanGaps: true,
@@ -6785,7 +6805,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.80
+// Fund Portfolio Dashboard — 整合版 V2.81
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
