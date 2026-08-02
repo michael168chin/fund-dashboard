@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.82 (整合版)
+     版本：V2.84 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1182,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.82  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.84  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.82 (整合版)';
+const APP_VERSION = 'V2.84 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -2404,13 +2404,13 @@ function t4GroupMsRenderList(gi, filter=''){
       + ' style="width:42px;height:20px;font-size:9px;padding:1px 3px;border:1px solid #fde68a;border-radius:4px;text-align:right;background:#fffbeb;box-sizing:border-box;"'
       + ' title="EMA天數" onclick="event.stopPropagation();"'
       + ' oninput="t4SetEmaPeriod('+gi+',\''+sv+'\',this.value)">'
-      + '<input type="color" value="'+(state.t4_colorMap[gi+':'+v]||T4_GROUP_COLORS[gi])+'"'
+      + '<input type="color" value="'+t4GetLineColor(gi,v)+'"'
       + ' title="折線顏色" onclick="event.stopPropagation();"'
-      + ' oninput="t4SetFundColor('+gi+',\''+sv+'\',this.value)"'
+      + ' onchange="t4SetFundColor('+gi+',\''+sv+'\',this.value)"'
       + ' style="width:22px;height:20px;padding:1px;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer;box-sizing:border-box;flex-shrink:0;">'
-      + '<input type="color" value="'+(state.t4_colorMap['ema:'+gi+':'+v]||T4_GROUP_COLORS[gi])+'"'
+      + '<input type="color" value="'+t4GetEmaColor(gi,v)+'"'
       + ' title="EMA顏色" onclick="event.stopPropagation();"'
-      + ' oninput="t4SetEmaColor('+gi+',\''+sv+'\',this.value)"'
+      + ' onchange="t4SetEmaColor('+gi+',\''+sv+'\',this.value)"'
       + ' style="width:22px;height:20px;padding:1px;border:1px solid #fde68a;border-radius:4px;cursor:pointer;box-sizing:border-box;flex-shrink:0;">'
       + '<span style="font-size:8px;color:#aaa;line-height:1.2;flex-shrink:0;">線/EMA</span>'
       + '<label style="display:inline-flex;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;margin-left:2px;" onclick="event.stopPropagation();" title="配息再投資回購比例">'
@@ -2645,6 +2645,13 @@ function t4SetYMode(mode){
   document.getElementById('t4-btn-ymode-pct').className   = mode==='pct'   ? 'btn btn-primary text-xs' : 'btn text-xs';
   document.getElementById('t4-btn-ymode-price').className = mode==='price' ? 'btn btn-primary text-xs' : 'btn text-xs';
   if(state.t4_loaded) t4Redraw();
+}
+
+function t4GetLineColor(gi, v){
+  return state.t4_colorMap[gi+':'+v] || T4_GROUP_COLORS[gi];
+}
+function t4GetEmaColor(gi, v){
+  return state.t4_colorMap['ema:'+gi+':'+v] || T4_GROUP_COLORS[gi];
 }
 
 function t4SetViewMode(mode){
@@ -3785,7 +3792,8 @@ function t3FilterOutliers(){
   const rows = state.t3_pRows;
   // 取所有基金欄位
   const funds = new Set();
-  rows.forEach(r=>Object.keys(r).forEach(k=>{ if(k!=='date') funds.add(k); }));
+  const _excludeOutlier = new Set(['date','年','月','星期','美元兌新台幣匯率','日圓兌新台幣匯率']);
+  rows.forEach(r=>Object.keys(r).forEach(k=>{ if(!_excludeOutlier.has(k)&&!k.startsWith('_raw_')) funds.add(k); }));
 
   funds.forEach(fund=>{
     // 收集有值的索引
@@ -6815,7 +6823,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.82
+// Fund Portfolio Dashboard — 整合版 V2.84
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
