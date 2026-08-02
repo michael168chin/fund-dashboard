@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.79 (整合版)
+     版本：V2.80 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1182,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.79  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.80  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.79 (整合版)';
+const APP_VERSION = 'V2.80 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3064,11 +3064,12 @@ function t4Redraw(){
           data: groupData, spanGaps: true,
           borderColor: T4_GROUP_COLORS[gi],
           backgroundColor: 'transparent',
-          borderWidth: state.t4_comboWidth,
+          borderWidth: t4IsCandle ? 0 : state.t4_comboWidth,  // K線模式隱藏折線
+          showLine: !t4IsCandle,                               // K線模式不畫折線
           borderDash: [],
           pointStyle: 'circle',
           pointRadius: 0,
-          pointHoverRadius: 6,
+          pointHoverRadius: t4IsCandle ? 0 : 6,
           pointBorderColor: T4_GROUP_COLORS[gi],
           pointBackgroundColor: T4_GROUP_COLORS[gi],
           fill: false, tension: 0.2,
@@ -4329,7 +4330,8 @@ function t3Redraw(){
       _ohlc: wd,                   // K線用 OHLC（自訂屬性）
       borderColor: sr.color,
       backgroundColor: FILL_COLORS[i % FILL_COLORS.length],
-      borderWidth: t3lw,
+      borderWidth: isCandle ? 0 : t3lw,
+      showLine: !isCandle,         // K線模式不畫折線
       pointRadius: isCandle ? 0 : t3ps,
       pointHoverRadius: isCandle ? 0 : Math.max(t3ps+3, 6),
       fill: seriesList.length === 1 && !isCandle,
@@ -6783,7 +6785,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.79
+// Fund Portfolio Dashboard — 整合版 V2.80
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
