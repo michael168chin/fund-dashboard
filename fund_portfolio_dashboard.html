@@ -1,6 +1,6 @@
 <!-- ═══════════════════════════════════════════════════════
      Investment Portfolio Dashboard
-     版本：V2.80 (整合版)
+     版本：V2.81 (整合版)
      功能：配置計劃 + 當前明細 + 投資組合走勢
      ═══════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
@@ -1182,10 +1182,10 @@
 <script>
 // ═══════════════════════════════════════════════════════════
 //  Investment Portfolio Dashboard — app.js
-//  整合版 V2.80  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
+//  整合版 V2.81  (配置計劃 + 當前明細 + 投資組合走勢 + 標的比較 + 模擬投資)
 // ═══════════════════════════════════════════════════════════
 
-const APP_VERSION = 'V2.80 (整合版)';
+const APP_VERSION = 'V2.81 (整合版)';
 const DEFAULT_PASSWORD = 'A32188';
 const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwJwIhF2BkQLv9GLYnpplk320MVYTJ4ElQdJ9eUUkt5NmocGh04mHR3-iklZLUe0IBU/exec';
 const SHEET_ID = '1J68EQUYAmQ4-623D7fJUG7YNogk6d2k_U0MVxmKHKFA';
@@ -3105,8 +3105,9 @@ function t4Redraw(){
   // t4WeekKeys：直接從 allDates 計算週 key，不依賴 datasets（避免已轉換問題）
   const _t4DummyVals = allDates.map(()=>1);  // 只需長度，值不重要
   const _t4WeeklyDummy = t4IsWeek ? t3CalcWeeklyData(allDates, _t4DummyVals) : null;
-  const t4WeekKeys   = _t4WeeklyDummy ? _t4WeeklyDummy.map(w=>w.wk) : allDates;
-  const t4DisplayLen = t4IsWeek ? t4WeekKeys.length : allDates.length;
+  const t4WeekKeys        = _t4WeeklyDummy ? _t4WeeklyDummy.map(w=>w.wk)    : allDates;
+  const t4WeekCloseDates  = _t4WeeklyDummy ? _t4WeeklyDummy.map(w=>w.label) : allDates;
+  const t4DisplayLen      = t4IsWeek ? t4WeekKeys.length : allDates.length;
 
   if(state.t4_chart) state.t4_chart.destroy();
   const t4XTickCb = function(val){
@@ -3182,7 +3183,7 @@ function t4Redraw(){
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display:false },
-        tooltip:{ enabled:false, external: ctx=>t4ShowTip(ctx, allDates, datasets) }
+        tooltip:{ enabled:false, external: ctx=>t4ShowTip(ctx, t4IsWeek ? t4WeekCloseDates : allDates, datasets) }
       },
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t4XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
@@ -4541,7 +4542,7 @@ function t3Redraw(){
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display: false },
-        tooltip:{ enabled:false, external: ctx=>t3ShowTip(ctx, dates, seriesList) }
+        tooltip:{ enabled:false, external: ctx=>t3ShowTip(ctx, isWeek ? weekDates : dates, seriesList) }
       },
       scales:{
         x:{ ticks:{autoSkip:true,maxTicksLimit:16,font:{size:11},color:'#888',callback:t3XTickCb}, grid:{color:'rgba(0,0,0,0.05)'} },
@@ -6769,7 +6770,7 @@ function t5SetStatus(msg,isErr){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Fund Portfolio Dashboard — 整合版 V2.80
+// Fund Portfolio Dashboard — 整合版 V2.81
 // 最後修改：配息回購比例個別設定（Tab4/Tab5 各自獨立）
 // ═══════════════════════════════════════════════════════════
 </script>
